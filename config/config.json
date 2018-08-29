@@ -1,0 +1,29 @@
+{
+  "development": {
+    "username": "project2",
+    "password": "project2",
+    "database": "project2",
+    "host": "localhost",
+    "port": "5400",
+    "dialect": "postgres",
+    "timestamps": false
+  },
+  "test": {
+    "username": "project2",
+    "password": "project2",
+    "database": "project2",
+    "host": "localhost",
+    "port": "5400",
+    "dialect": "postgres",
+    "timestamps": false
+  },
+  "production": {
+    "username": "project2",
+    "password": "project2",
+    "database": "project2",
+    "host": "localhost",
+    "port": "5400",
+    "dialect": "postgres",
+    "timestamps": false
+  }
+}

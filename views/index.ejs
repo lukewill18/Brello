@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Brello</title>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+    <link rel="stylesheet" href="/stylesheets/bootstrap.css">
+    <link rel="stylesheet" href="/stylesheets/style.css">
+  </head>
+  <body>
+    <div id="alert" class="alert alert-danger"></div>
+    <div id="header" class="hidden">
+        <i class="fas fa-home hidden" id="linktohome"></i>
+        <input type="text" id="searchbar">
+        <i class="fas fa-search" id="search-icon"></i>
+        <h3>Brello</h3>
+        <i class="fas fa-bell" id="notifications-btn"></i>
+        <div class="user-icon" id="header-user-icon"></div>
+    </div>
+    <div id="match-list" class="hidden"></div>
+    <div id="notifications-popup" class="hidden">
+    </div>
+
+    <div id="login-page" class="shown">
+        <div id="login-area">
+            <h1>Login</h1>
+            <form id="login-form">
+                <label>Email: </label><input id="login-email-entry" type="text"> <br>
+                <label>Password: </label><input id="login-password-entry" type="password"><br>
+                <button class="btn" id="login-btn">Login</button>
+            </form>
+        </div>
+        <div class="solid-line"></div>
+        <div id="register-area">
+            <h1>Register</h1>
+            <form id="register-form">
+                <label>First Name: </label><input id="first-name-entry" type="text"> <label>Last Name: </label><input id="last-name-entry" type="text"> <br>
+                <label>Email: </label><input id="register-email-entry" type="text">
+                <label>Password: </label><input id="register-password-entry" type="password"><br>
+                <button class="btn" id="register-btn">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="board-page" class="hidden">
+        <div id="add-board-modal-container" class="hidden">
+            <div id="add-board-modal">
+                <form id="add-board-form">
+                    <div id="add-board-box">
+                        <input type="text" id="board-title-entry" placeholder="Add board title"> <i class="fas fa-times" id="add-board-close"></i>
+                        <select id="team-dropdown">
+                            <option value="No team">No Team</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-not-ready" id="create-board-btn">Create Board</button>
+                </form>
+            </div>
+        </div>
+        <div class="row" id="board-page-row">
+            <div class="col-4 col-sm-0" id="board-sidebar">
+            </div>
+            <div class="col-8 col-sm-12" id="all-boards">
+                <div class="row" id="recently-viewed-boards-row">
+                    <i class="far fa-clock"></i> <h5>Recently Viewed</h5> <br>
+                </div>
+                <div class="row" id="personal-boards-row">
+                    <i class="fas fa-user"></i> <h5>Personal Boards</h5> <br>
+                    <div class="create-board-item board-box"><p>Create new board...</p></div>    
+                </div>
+                <div class="row" id="team-rows-container">
+                </div>
+                <div id="create-new-team-link"><p>Create a new team...</p></div>
+                <div id="create-new-team-popup" class="hidden">
+                    <h5>Create Team</h5> <i class="fas fa-times" id="create-team-close"></i>
+                    <div class="solid-line"></div>
+                    <h6>Name</h6>
+                    <input type="text" id="new-team-name">
+                    <h6>Description <span class="lighter">(optional)</span></h6>
+                    <textarea rows="4" cols="30" id="new-team-desc"></textarea>
+                    <button class="btn btn-not-ready" id="create-new-team-btn">Create</button>
+                    <div class="solid-line"></div>
+                    <p>A team is a group of boards and people. Use it to organize your company, side hustle, family, or friends.</p>
+                </div>
+            </div>
+        </div>
+       
+    </div>
+    <div id="list-page" class="hidden">
+        <div id="card-modal-container" class="hidden">
+            <div id="card-modal">
+                <i class="fas fa-times" id="close-card-modal"></i>
+                <i class="fas fa-window-maximize"></i>
+                <h3 id="card-modal-name">name goes here</h3>
+                <p id="modal-list-p">in list <span id="modal-list-name">name</span></p>
+                <i class="fas fa-bars"></i>
+                <h4 class="modal-small-header">Description</h4><br>
+                <textarea id="modal-description-entry" placeholder="Add a more detailed description..." rows="5" cols="75"></textarea>
+                <p id="modal-description" class="hidden"></p><br>
+                <button class="btn btn-not-ready" id="modal-save-desc-btn">Save</button><br>
+                <i class="fas fa-tags"></i><h4 class="modal-small-header">Labels</h4><br>
+                <div id="label-container">
+                    <div contenteditable="true" id="label-entry"></div>
+                </div>
+                <i class="far fa-comment"></i>
+                <h4 class="modal-small-header">Add Comment</h4><br>
+                <div class="user-icon modal-user-icon"></div>
+                <textarea id="modal-comment-entry" placeholder="Write a comment..." rows="5" cols="70"></textarea><br>
+                <button class="btn" id="modal-save-comment-btn">Save</button><br>
+                <i class="fas fa-list-ul"></i>
+                <h4 class="modal-small-header">Activity</h4>
+                <ul id="modal-comments">
+                </ul>
+            </div>
+        </div>
+        <div id="list-list">
+            <div id="lists-container">
+                <div class="list">
+                    <h6 class="list-title draggable">To Do</h6>
+                    <div class="add-card">+ Add a card</div>
+                    <div class="add-card-template hidden">
+                        <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
+                        <button class="btn add-card-btn">Add Card</button> <i class="fas fa-times close-template"></i>
+                    </div>
+                </div>
+                <div class="list">
+                    <h6 class="list-title draggable">In Progress</h6>
+                    <div class="add-card">+ Add a card</div>
+                    <div class="add-card-template hidden">
+                        <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
+                        <button class="btn add-card-btn">Add Card</button> <i class="fas fa-times close-template"></i>
+                    </div>
+                </div>
+                <div class="list">
+                    <h6 class="list-title draggable">Done</h6>
+                    <div class="add-card">+ Add a card</div>
+                    <div class="add-card-template hidden">
+                        <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
+                        <button class="btn add-card-btn">Add Card</button> <i class="fas fa-times close-template"></i>
+                    </div>
+                </div>
+            </div>
+            <div id="add-list"><p id="add-list-p">+ Add another list</p></div>
+            <div id="add-list-template" class="hidden">
+                <form id="add-list-form" autocomplete="off">
+                    <input id="list-entry" type="text" placeholder="Enter list title"><br>
+                    <button class="btn" id="add-list-btn">Add List</button> <i class="fas fa-times" id="close-list-template"></i>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.2.0/anime.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@shopify/draggable@1.0.0-beta.7/lib/draggable.bundle.js"></script>
+    <script src="/javascripts/login.js"></script>
+    <script src="/javascripts/script.js"></script>
+  </body>
+</html>

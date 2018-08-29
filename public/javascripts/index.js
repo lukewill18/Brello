@@ -26,86 +26,7 @@ function generateList(listname, list_id, cards) {
     return temp;
 }
 
-function displayPersonalBoards(boards, personalBoards) {
-    let personals = boards.filter(function(b) {
-        return b.teamId == null;
-    });
-    let p_temp = ``;
-    for(let i = 0; i < personals.length; ++i) {
-        p_temp += `<div class="board-item board-box" data-id=${personals[i].id}>${personals[i].title}</div>`;
-    }
-    $(p_temp).insertBefore(personalBoards.find(".create-board-item"));
-}
-
-function displayTeamBoards(boards, teamBoards) {
-    let teams = boards.filter(function(b) {
-        return b.teamId != null;
-    });
-    for(let i = 0; i < teams.length; ++i) {
-        let b = teamBoards.find(`.team-boards-row[data-id="${teams[i].teamId}"]"`);
-        let temp = `<div class="board-item board-box" data-id=${teams[i].id}>${teams[i].title}</div>`
-        if(b.length > 0) {
-            $(temp).insertBefore(b.find(".create-board-item"));
-        }
-        else {
-            let row_temp = `<div class="row team-boards-row" data-id=${teams[i].teamId}}>
-                                <i class="fas fa-users"></i> <h5>${"TEAMNAME"}</h5> <br>
-                                <div class="create-board-item board-box"><p>Create new board...</p></div>
-                            </div>`;
-            teamBoards.append(row_temp);
-            $(temp).insertBefore($(row_temp).find(".create-board-item"));
-        }
-    }
-}
-
-function displayAllBoards(boards, recentBoards, personalBoards, teamBoards) {
-    displayPersonalBoards(boards, personalBoards);
-    displayTeamBoards(boards, teamBoards);
-}
-
-function getAllBoards(recentBoards, personalBoards, teamBoards) {
-    return new Promise(function(resolve, reject) {
-        $.ajax({
-            url: "http://localhost:3000/boards/",
-            success: function(response) {
-                if(response.hasOwnProperty("error")) {
-                    resolve();
-                    return;
-                }
-                displayAllBoards(response, recentBoards, personalBoards, teamBoards);
-                resolve();
-            }
-        });
-    });
-}
-
 $(function() {
-    const header = $("#header");
-    const linktohome = $("#linktohome");
-    const siteTitle = $("#header h3");
-    const notificationsBtn = $("#notifications-btn");
-    const notificationsPopup = $("#notifications-popup");
-    const searchbar = $("#searchbar");
-    const matchList = $("#match-list");
-
-    const loginPage = $("#login-page");
-    const boardPage = $("#board-page");
-    const recentBoards = boardPage.find("#recently-viewed-boards-row");
-    const personalBoards = boardPage.find("#personal-boards-row");
-    const teamBoards = boardPage.find("#team-rows-container");
-    const createTeamBtn = boardPage.find("#create-new-team-link");
-    const createTeamText = createTeamBtn.find("p");
-    const createTeamPopup = boardPage.find("#create-new-team-popup");
-    const createTeamName = createTeamPopup.find("#new-team-name");
-    const createTeamDesc = createTeamPopup.find("#new-team-desc");
-    const addBoardModalContainer = boardPage.find("#add-board-modal-container");
-    const addBoardModal = addBoardModalContainer.find("#add-board-modal");
-    const addBoardForm = addBoardModal.find("#add-board-form");
-    const createBoardBtn = addBoardModal.find("#create-board-btn");
-    const boardTitleEntry = addBoardModal.find("#board-title-entry");
-    const boardTeamEntry = addBoardModal.find("#team-dropdown");
-    const finishTeamCreationBtn = createTeamPopup.find("#create-new-team-btn");
-    
     const listPage = $("#list-page")
     const cardModalContainer = listPage.find("#card-modal-container");
     const cardModal = cardModalContainer.find("#card-modal");
@@ -134,46 +55,8 @@ $(function() {
     let current_card;
     let clickX = 0;
     let teams = [];
-    let boards = [];
 
-    window.location.hash = "#login";
-
-    searchbar.keydown(function() {
-        matchList.find(".match").remove();
-        let query = $(this).val();
-        let matches = boards.filter(function(b) {
-            return b.name.includes(query);
-        });
-        if(matches.length > 0) {
-            let temp = ``;
-            for(let i = 0; i < matches.length; ++i) {
-                temp += `<div class="match" data-index=${boards.indexOf(matches[i])}>${matches[i].name}</div>`
-            }
-            matchList.append(temp);
-            matchList.removeClass("hidden");
-        }
-        else {
-            matchList.addClass("hidden");
-        }
-    });
-
-    $("body").on("click", ".match", function() {
-        openBoard(boards[$(this).attr("data-index")]);
-        searchbar.val("");
-        searchbar.blur();
-        matchList.addClass("hidden");
-    });
-
-    notificationsBtn.click(function() {
-        notificationsPopup.toggleClass("hidden");
-    });
-
-    linktohome.click(function() {
-        window.location.hash = "#board-view";
-    });
-    siteTitle.click(function() {
-        window.location.hash = "#board-view";
-    });
+    //window.location.hash = "#login";
 
     function renderLists(board) {
         listContainer.find(".list").remove();
@@ -185,128 +68,6 @@ $(function() {
             card_drag.addContainer(document.querySelector("#new-list-" + new_lists.toString()));
         }   
     }
-
-    function openBoard(board) {
-        current_board = board;
-        window.location.hash = "#list-view";
-        renderLists(board);
-    }
-
-    boardPage.on("click", ".board-item", function() {
-        let name = $(this)[0].textContent;
-        let board = boards.find(function(b) {
-            return b.name == name;
-        });
-        openBoard(board);
-    });
-    
-    function hideCreateTeamPopup() {
-        createTeamPopup.addClass("hidden");
-        createTeamName.val("");
-        createTeamDesc.val("");
-        finishTeamCreationBtn.removeClass("btn-ready");
-    }
-
-    boardPage.click(function(e) {
-        if(!($(e.target).is(createTeamPopup) || $(e.target).is(createTeamBtn) || $(e.target).is(createTeamText) || $(e.target).parent().is(createTeamPopup) || 
-            $(e.target).parent().parent().is(createTeamPopup))) {
-            hideCreateTeamPopup();
-        }
-        if(!$(e.target).is(notificationsPopup)) {
-            notificationsPopup.addClass("hidden");
-        }
-    });
-
-    createTeamBtn.click(function() {
-        createTeamPopup.removeClass("hidden");
-        createTeamName.focus();
-    });
-
-    createTeamPopup.find("#create-team-close").click(hideCreateTeamPopup);
-
-    function hideAddBoardModal() {
-        addBoardModalContainer.addClass("hidden");
-        boardTitleEntry.val("");
-    }
-
-    addBoardModal.find("#add-board-close").click(hideAddBoardModal);
-    
-    boardPage.on("click", ".create-board-item", function() {
-        addBoardModalContainer.removeClass("hidden");
-        let teamname = $(this).parent().data("name");
-        if(teamname) {
-            boardTeamEntry.val(teamname);
-        }
-        else
-            boardTeamEntry.val("No team");
-        //
-        boardTitleEntry.focus();
-    });
-
-    addBoardModalContainer.click(function(e) {
-        if($(e.target).is(addBoardModalContainer))
-            hideAddBoardModal();
-    });
-
-    boardTitleEntry.keyup(function() {
-        if($(this).val() != "")
-            createBoardBtn.addClass("btn-ready");
-        else {
-            createBoardBtn.removeClass("btn-ready");
-        }
-    });
-
-    addBoardForm.on("submit", function(e) {
-        e.preventDefault();
-        if(boardTitleEntry.val() != "") {
-            let board_name = boardTitleEntry.val();
-            let team_name = boardTeamEntry.val();
-            boards.push({
-                name: board_name,
-                team: team_name,
-                lists: [],
-                lastViewed: Date.now()
-            });
-            let temp = `<div class="board-item board-box">${board_name}</div>`;
-            if(team_name.toLowerCase() == "no team") {
-                $(temp).insertBefore(personalBoards.find(".create-board-item"));
-            }
-            else {
-                $(temp).insertBefore(teamBoards.find("[data-name='" + team_name + "']").find(".create-board-item"));
-            }
-            hideAddBoardModal();
-        }
-    });
-
-    createTeamName.keyup(function() {
-        if($(this).val() != "")
-            finishTeamCreationBtn.addClass("btn-ready");
-        else {
-            finishTeamCreationBtn.removeClass("btn-ready");
-        }
-    });
-
-    finishTeamCreationBtn.click(function() {
-        if(createTeamName.val() != "") {
-            let team_name = createTeamName.val();
-            let team_desc = createTeamDesc.val();
-            teams.push({
-                name: team_name,
-                description: team_desc,
-                members: [],
-                boards: [],
-            });
-
-            let temp = $(`<div class="row team-boards-row" data-name=${team_name}>
-                                <i class="fas fa-users"></i> <h5>${team_name}</h5> <br>
-                                <div class="create-board-item board-box"><p>Create new board...</p></div>
-                            </div>`)
-            temp.data("name", team_name);
-            teamBoards.append(temp);
-            boardTeamEntry.append(`<option value=${team_name}>${team_name}</option>`)
-            hideCreateTeamPopup();
-        }
-    });
 
     let card_drag = new Draggable.Sortable(document.querySelectorAll(".list"), {
         draggable: '.card',
@@ -638,7 +399,7 @@ $(function() {
             $(this).removeClass("btn-ready");
         }
     });
-
+/*
     function displayMostRecentBoards() {
         let copy = boards.slice(0);
         copy.sort(function(a, b) {
@@ -661,6 +422,7 @@ $(function() {
         displayMostRecentBoards();
         switchPage(current, boardPage);
     }
+    */
 
     function switchToListPage(current) {
         linktohome.removeClass("hidden");
@@ -668,7 +430,7 @@ $(function() {
         switchPage(current, listPage);
         current_board.lastViewed = Date.now();
     }
-
+/*
     $(window).on("hashchange", function() {
         let current = $(".shown");
         if(window.location.hash == "#login") {
@@ -681,5 +443,5 @@ $(function() {
         else if(window.location.hash == "#list-view") {
             switchToListPage(current);
         }
-    });
+    });*/
 });

@@ -78,7 +78,7 @@ $(function() {
         let email = loginEmail.val();
         let pass = loginPassword.val();
         login(email, pass).then(function(id) {
-            window.location.hash = "#board-view";
+            window.location.pathname = "boards";
         }).catch(function(thrown) {
             showAlert(thrown.responseJSON.error);
         });
@@ -91,7 +91,7 @@ $(function() {
         let email = registerEmail.val();
         let password = registerPassword.val();
         registerAccount(first_name, last_name, email, password).then(function(id) {
-            window.location.hash = "#board-view";
+            window.location.pathname = "boards";
         }).catch(function(thrown) {
             showAlert(thrown.responseJSON.error);
         });

@@ -10,6 +10,7 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var teamsRouter = require('./routes/teams');
 var boardsRouter = require('./routes/boards');
+var listsRouter = require('./routes/lists');
 
 var app = express();
 
@@ -31,9 +32,14 @@ app.use(session({
   activeDuration: 5 * 60 * 1000,
 }));
 
+function disableCache(req, res, next) {
+  res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+  next();
+}
+
 function requireLogin(req, res, next) {
   if (!req.session.id) {
-    res.render("index");
+    res.redirect("/");
   } else {
     next();
   }
@@ -41,8 +47,9 @@ function requireLogin(req, res, next) {
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/boards', requireLogin, boardsRouter);
+app.use('/boards', requireLogin, disableCache, boardsRouter);
 app.use('/teams', requireLogin, teamsRouter);
+app.use('/lists', requireLogin, listsRouter);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));

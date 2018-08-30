@@ -9,6 +9,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
+      ownerId: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        references: {
+          model: "users",
+          key: "id"
+        },
+        onDelete: "cascade"
+      },
       boardId: {
         allowNull: false,
         type: Sequelize.INTEGER,
@@ -20,6 +29,7 @@ module.exports = {
       },
       order: {
         type: Sequelize.INTEGER,
+        autoIncrement: true,
         allowNull: false
       },
       name: {

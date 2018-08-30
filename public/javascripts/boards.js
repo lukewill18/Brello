@@ -41,6 +41,10 @@ function getAllBoards(personalBoards, teamBoards, boardTeamEntry) {
         $.ajax({
             url: "http://localhost:3000/boards/all",
             success: function(response) {
+                for(let i = 0; i < response.length; ++i) {
+                    if(response[i].boards[0] == null)
+                        response[i].boards = [];
+                }
                 displayAllBoards(response, personalBoards, teamBoards, boardTeamEntry);
                 let all_boards = [];
                 for(let i = 0; i < response.length; ++i) {
@@ -49,7 +53,6 @@ function getAllBoards(personalBoards, teamBoards, boardTeamEntry) {
                 resolve(all_boards);
             },
             error: function(thrown) {
-                showAlert("Error loading boards");
                 resolve([]);
             }  
         });
@@ -141,7 +144,6 @@ $(function() {
     const boardTitleEntry = addBoardModal.find("#board-title-entry");
     const boardTeamEntry = addBoardModal.find("#team-dropdown");
     const finishTeamCreationBtn = createTeamPopup.find("#create-new-team-btn");
-    let new_lists = 0; 
     let boards = [];
 
     searchbar.keyup(function() {
@@ -164,7 +166,7 @@ $(function() {
     });
 
     $("body").on("click", ".match", function() {
-        openBoard(boards[$(this).attr("data-index")]);
+        openBoard(boards[$(this).attr("data-index")].id);
         searchbar.val("");
         searchbar.blur();
         matchList.addClass("hidden");
@@ -173,25 +175,19 @@ $(function() {
     getAllBoards(personalBoards, teamBoards, boardTeamEntry).then(function(resolve) {
         boards = resolve;
         linktohome.addClass("hidden");
-        new_lists = 0;
         recentBoards.find(".board-item").remove();
         displayMostRecentBoards();
     });
     //header.removeClass("hidden");
    
 
-    function openBoard(board) {
-        current_board = board;
-        window.location.hash = "#list-view";
+    function openBoard(board_id) {
+        window.location.pathname = "lists/" + board_id;
        // renderLists(board);
     }
 
     boardPage.on("click", ".board-item", function() {
-        let name = $(this)[0].textContent;
-        let board = boards.find(function(b) {
-            return b.name == name;
-        });
-        openBoard(board);
+        openBoard($(this).attr("data-id"));
     });
     
     function hideCreateTeamPopup() {

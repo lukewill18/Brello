@@ -4,11 +4,20 @@ function swap(arr, ind1, ind2) {
     arr[ind2] = copy;
 }
 
-function switchPage(toHide, toShow) {
-    toHide.addClass("hidden");
-    toHide.removeClass("shown");
-    toShow.removeClass("hidden");
-    toShow.addClass("shown");
+function addList(listname, boardId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/lists/",
+            method: "POST",
+            data: {listname: listname, boardId: boardId},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject();
+            }
+        });
+    });
 }
 
 function generateList(listname, list_id, cards) {
@@ -54,10 +63,7 @@ $(function() {
     let current_board;
     let current_card;
     let clickX = 0;
-    let teams = [];
-
-    //window.location.hash = "#login";
-
+    
     function renderLists(board) {
         listContainer.find(".list").remove();
         for(let i = 0; i < board.lists.length; ++i) {
@@ -68,7 +74,7 @@ $(function() {
             card_drag.addContainer(document.querySelector("#new-list-" + new_lists.toString()));
         }   
     }
-
+    
     let card_drag = new Draggable.Sortable(document.querySelectorAll(".list"), {
         draggable: '.card',
         mirror: {constrainDimensions: true}
@@ -97,12 +103,12 @@ $(function() {
             old_list.cards.splice(e.oldIndex, 1);
         }
     });
-
+    
     new Draggable.Sortable(document.querySelectorAll("#lists-container"), {
      draggable: '.list',
      handle: ".list-title",
      mirror: {constrainDimensions: true}
-   }).on("drag:start", function(event) {
+    }).on("drag:start", function(event) {
         if(dragging_card) {
             event.cancel();
         }
@@ -120,7 +126,7 @@ $(function() {
         }
         console.log(current_board.lists);*/
     });
-
+    
     function hideCardTemplate() {
         currentCardTemplate.siblings(".add-card").removeClass("hidden");
         currentCardTemplate.addClass("hidden");
@@ -128,14 +134,14 @@ $(function() {
         currentCardTemplate.parent().css("padding-bottom", "25px");
         currentCardTemplate = undefined;
     }
-
+    
     function hideListTemplate() {
         addListTemplate.addClass("hidden");
         addListBtn.removeClass("hidden");
         listEntry.val("");
         showing_list_template = false;
     }
-
+    
     $("body").click(function(e) {
         if(currentCardTemplate && !e.target.classList.contains("add-card") && !e.target.classList.contains("add-card-template") && !e.target.classList.contains("add-card-btn")
             && !e.target.classList.contains("card-entry")) {
@@ -144,54 +150,56 @@ $(function() {
         if(showing_list_template && e.target.id != "add-list-template" && e.target.id != "add-list" && e.target.id != "add-list-p" && e.target.id != "add-list-btn" && e.target.id != "list-entry")
             hideListTemplate();
     });
-
+    
     listList.mousedown(function(e) {
         if(e.target.id == "list-list" || e.target.id == "lists-container") {
             dragging = true;
             clickX = e.pageX;
         }
     });
-
+    
     $("body").mousemove(function(e) {
         if(dragging) {
             e.preventDefault();
             listList.scrollLeft(listList.scrollLeft() + (clickX - e.pageX)/2);
         }     
     });
-
+    
     $("body").mouseup(function() {
         dragging = false;
     });
-
+    
     addListBtn.click(function() {
         $(this).addClass("hidden");
         addListTemplate.removeClass("hidden");
         listEntry.focus();
         showing_list_template = true;
     });
-
+    
     closeListTemplate.click(function() {
         hideListTemplate();
     });
-
+    
     $("#add-list-form").on("submit", function(e) {
         e.preventDefault();
         let listname = listEntry.val();
         if(listname.trim() != "") {
-            current_board.lists.push({
+            /*current_board.lists.push({
                 name: listname,
                 cards: []
+            });*/
+            addList(listname, listList.attr("data-board-id")).then(function() {
+                let temp = $(generateList(listname, ++new_lists, []));
+                temp.data("name", listname);
+                listContainer.append(temp);
+                listEntry.val("");
+                listEntry.focus();
+                card_drag.addContainer(document.querySelector("#new-list-" + new_lists.toString()));
+                listList.scrollLeft(listContainer.width());
             });
-            let temp = $(generateList(listname, ++new_lists, []));
-            temp.data("name", listname);
-            listContainer.append(temp);
-            listEntry.val("");
-            listEntry.focus();
-            card_drag.addContainer(document.querySelector("#new-list-" + new_lists.toString()));
-            listList.scrollLeft(listContainer.width());
         }
     });
-
+    
     listContainer.on("click", ".add-card", function() {
         if(currentCardTemplate)
             hideCardTemplate();
@@ -201,9 +209,9 @@ $(function() {
         currentCardTemplate.children(".card-entry").focus();
         currentCardTemplate.parent().css("padding-bottom", "100px");
     });
-
+    
     listContainer.on("click", ".close-template", hideCardTemplate);
-
+    
     function submitCardForm(cardname) {
         if(cardname.trim() != "") {
             let entry = currentCardTemplate.find(".card-entry");
@@ -222,11 +230,11 @@ $(function() {
             });
         }
     }
-
+    
     listContainer.on("click", ".add-card-btn", function() {
         submitCardForm($(this).siblings(".card-entry").val());
     });
-
+    
     listContainer.on("keydown", ".card-entry", function(e) {
         if(e.keyCode == 13) {
             e.preventDefault();
@@ -235,12 +243,12 @@ $(function() {
         else if(e.keyCode == 27)
             hideCardTemplate();
     });
-
+    
     listContainer.on("keyup", ".card-entry", function(e) {
         if(e.keyCode == 13)
             $(this).val("");
     });
-
+    
     function showCardModalDesc() {
         if(current_card.description != "") {
             cardModalDesc.text(current_card.description);
@@ -265,7 +273,7 @@ $(function() {
         }
         $(temp).insertBefore(labelEntry);
     }
-
+    
     function showCardModalComments() {
         cardModal.height(650);
         commentList.find(".modal-comment-info").remove();
@@ -277,7 +285,7 @@ $(function() {
         commentList.append(temp);
         cardModal.height(cardModal.height() + commentList.innerHeight());
     }
-
+    
     function showCardModal(cardname, listname) {
         cardModalContainer.removeClass("hidden");
         cardModal.find(".btn-ready").removeClass("btn-ready");
@@ -292,23 +300,23 @@ $(function() {
         showCardModalLabels();
         showCardModalComments();
     }
-
+    
     function hideCardModal() {
         cardModalContainer.addClass("hidden");
     }
-
+    
     listList.on("click", ".card", function() {
         showCardModal($(this).text(), $(this).parent().data("name"));
     });
-
+    
     cardModalContainer.click(function(e) {
         if(e.target.id == "card-modal-container") {
             hideCardModal();
         }
     });
-
+    
     cardModal.find("#close-card-modal").click(hideCardModal);
-
+    
     cardModalDescEntry.keydown(function() {
         if($(this).val() != "") {
             cardModalSaveDescBtn.addClass("btn-ready");
@@ -317,7 +325,7 @@ $(function() {
             cardModalSaveDescBtn.removeClass("btn-ready");
         }
     });
-
+    
     cardModalSaveDescBtn.click(function() {
         let desc = cardModalDescEntry.val();
         current_card.description = desc;
@@ -326,20 +334,20 @@ $(function() {
         $(this).addClass("hidden");
         cardModalDesc.removeClass("hidden");
     });
-
+    
     cardModalDesc.click(function() {
         $(this).addClass("hidden");
         cardModalDescEntry.removeClass("hidden");
         cardModalSaveDescBtn.removeClass("hidden");
         cardModalDescEntry.val($(this).text());
     });
-
+    
     labelContainer.click(function(e) {
         if($(e.target).is(labelContainer)) {
             labelEntry.focus();
         }
     });
-
+    
     labelEntry.keydown(function(e) {
         if(e.keyCode == 13) {
             e.preventDefault();            
@@ -361,12 +369,12 @@ $(function() {
             $(this).blur();
         }
     });
-
+    
     labelContainer.on("click", ".remove-label", function() {
         $(this).parent().remove();
         current_card.labels.splice(current_card.labels.indexOf($(this).siblings(".labelname").text()), 1)
     });
-
+    
     function generateComment(comment, date) {
         return `<li class="modal-comment-info">
                     <div class="user-icon modal-user-icon"></div>
@@ -376,14 +384,14 @@ $(function() {
                     <div class="solid-line"></div>
                 </li>`;
     }
-
+    
     cardModalCommentEntry.keyup(function() {
         if($(this).val() != "")
             cardModalSaveCommentBtn.addClass("btn-ready");
         else
             cardModalSaveCommentBtn.removeClass("btn-ready");
     });
-
+    
     cardModalSaveCommentBtn.click(function() {
         let comment = cardModalCommentEntry.val();
         if(comment.trim() != "") {
@@ -399,49 +407,12 @@ $(function() {
             $(this).removeClass("btn-ready");
         }
     });
-/*
-    function displayMostRecentBoards() {
-        let copy = boards.slice(0);
-        copy.sort(function(a, b) {
-            return a.lastViewed < b.lastViewed;
-        });
-        let topFour = copy.slice(0, 4);
-        let temp = ``;
-        for(let i = 0; i < topFour.length; ++i) {
-            temp += `<div class="board-item board-box">${topFour[i].name}</div>`;
-        }
-        recentBoards.append(temp);
-    }
-
-    function switchToBoardPage(current) {
-        getAllBoards(recentBoards, personalBoards, teamBoards);
-        header.removeClass("hidden");
-        linktohome.addClass("hidden");
-        new_lists = 0;
-        recentBoards.find(".board-item").remove();
-        displayMostRecentBoards();
-        switchPage(current, boardPage);
-    }
-    */
-
+    
     function switchToListPage(current) {
         linktohome.removeClass("hidden");
         hideCardModal();
         switchPage(current, listPage);
         current_board.lastViewed = Date.now();
     }
-/*
-    $(window).on("hashchange", function() {
-        let current = $(".shown");
-        if(window.location.hash == "#login") {
-            header.addClass("hidden");
-            switchPage(current, loginPage);
-        }
-        if(window.location.hash == "#board-view") {
-            switchToBoardPage(current);
-        }
-        else if(window.location.hash == "#list-view") {
-            switchToListPage(current);
-        }
-    });*/
 });
+

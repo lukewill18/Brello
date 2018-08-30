@@ -10,6 +10,15 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
+      ownerId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "users",
+          key: "id"
+        },
+        onDelete: "cascade",
+      },
       listId: {
         allowNull: false,
         type: Sequelize.INTEGER,
@@ -21,6 +30,7 @@ module.exports = {
       },
       order: {
         type: Sequelize.INTEGER,
+        autoIncrement: true,
         allowNull: false
       },
       name: {

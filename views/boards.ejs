@@ -61,75 +61,10 @@
                 </div>
             </div>
         </div>
-    
-    </div>
-    <div id="list-page" class="hidden">
-        <div id="card-modal-container" class="hidden">
-            <div id="card-modal">
-                <i class="fas fa-times" id="close-card-modal"></i>
-                <i class="fas fa-window-maximize"></i>
-                <h3 id="card-modal-name">name goes here</h3>
-                <p id="modal-list-p">in list <span id="modal-list-name">name</span></p>
-                <i class="fas fa-bars"></i>
-                <h4 class="modal-small-header">Description</h4><br>
-                <textarea id="modal-description-entry" placeholder="Add a more detailed description..." rows="5" cols="75"></textarea>
-                <p id="modal-description" class="hidden"></p><br>
-                <button class="btn btn-not-ready" id="modal-save-desc-btn">Save</button><br>
-                <i class="fas fa-tags"></i><h4 class="modal-small-header">Labels</h4><br>
-                <div id="label-container">
-                    <div contenteditable="true" id="label-entry"></div>
-                </div>
-                <i class="far fa-comment"></i>
-                <h4 class="modal-small-header">Add Comment</h4><br>
-                <div class="user-icon modal-user-icon"></div>
-                <textarea id="modal-comment-entry" placeholder="Write a comment..." rows="5" cols="70"></textarea><br>
-                <button class="btn" id="modal-save-comment-btn">Save</button><br>
-                <i class="fas fa-list-ul"></i>
-                <h4 class="modal-small-header">Activity</h4>
-                <ul id="modal-comments">
-                </ul>
-            </div>
-        </div>
-        <div id="list-list">
-            <div id="lists-container">
-                <div class="list">
-                    <h6 class="list-title draggable">To Do</h6>
-                    <div class="add-card">+ Add a card</div>
-                    <div class="add-card-template hidden">
-                        <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
-                        <button class="btn add-card-btn">Add Card</button> <i class="fas fa-times close-template"></i>
-                    </div>
-                </div>
-                <div class="list">
-                    <h6 class="list-title draggable">In Progress</h6>
-                    <div class="add-card">+ Add a card</div>
-                    <div class="add-card-template hidden">
-                        <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
-                        <button class="btn add-card-btn">Add Card</button> <i class="fas fa-times close-template"></i>
-                    </div>
-                </div>
-                <div class="list">
-                    <h6 class="list-title draggable">Done</h6>
-                    <div class="add-card">+ Add a card</div>
-                    <div class="add-card-template hidden">
-                        <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
-                        <button class="btn add-card-btn">Add Card</button> <i class="fas fa-times close-template"></i>
-                    </div>
-                </div>
-            </div>
-            <div id="add-list"><p id="add-list-p">+ Add another list</p></div>
-            <div id="add-list-template" class="hidden">
-                <form id="add-list-form" autocomplete="off">
-                    <input id="list-entry" type="text" placeholder="Enter list title"><br>
-                    <button class="btn" id="add-list-btn">Add List</button> <i class="fas fa-times" id="close-list-template"></i>
-                </form>
-            </div>
-        </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.2.0/anime.js"></script>
     <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@shopify/draggable@1.0.0-beta.7/lib/draggable.bundle.js"></script>
     <script src="/javascripts/header.js"></script>
     <script src="/javascripts/boards.js"></script>
   </body>

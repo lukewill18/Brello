@@ -54,8 +54,8 @@ router.post("/", function(req, res, next) {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid team name or user id"));
     }
     else {
-        let query = `INSERT INTO "teams" VALUES (DEFAULT, :name) RETURNING *`
-        sequelize.query(query, {replacements: {name: team_name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response){
+        let query = `INSERT INTO "teams" VALUES (DEFAULT, :ownerid, :name) RETURNING *`
+        sequelize.query(query, {replacements: {ownerid: user_id, name: team_name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response){
             let created_team = response[0][0];
             let query2 = `INSERT INTO "teamUsers" VALUES (:teamid, :userid)`;
             sequelize.query(query2, {replacements: {teamid: created_team.id, userid: user_id}, type: sequelize.QueryTypes.INSERT}).then(function(response) {

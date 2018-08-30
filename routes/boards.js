@@ -14,10 +14,12 @@ router.get("/", function(req, res, next) {
 
 router.get("/all", function(req, res, next) {
     let query = `SELECT "t"."id" "teamId", "t"."name" "teamName", json_agg("b".*) "boards" FROM "boards" b
-                    LEFT JOIN "teams" t ON "b"."teamId" = "t"."id"
-                    LEFT JOIN "teamUsers" tu on "t"."id" = "tu"."teamId"
+                    FULL OUTER JOIN "teams" t
+                        ON "b"."teamId" = "t"."id"
+                    LEFT JOIN "teamUsers" tu
+                        ON "t"."id" = "tu"."teamId" AND :id = "tu"."userId"
                     WHERE "tu"."userId" = :id OR "b"."ownerId" = :id
-                    GROUP BY "t"."id";`
+                    GROUP BY "t"."id";`;
     let uid = req.session.id;
     sequelize.query(query, {replacements: {id: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         res.json(response);

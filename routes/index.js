@@ -8,7 +8,7 @@ var sequelize = db.sequelize;
 var router = express.Router();
 
 router.get("/", function(req, res, next) {
-    res.render("index", {});
+    res.render("login", {});
 });
 
 module.exports = router;

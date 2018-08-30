@@ -9,74 +9,52 @@ function displayPersonalBoards(boards, personalBoards) {
     $(p_temp).insertBefore(personalBoards.find(".create-board-item"));
 }
 
-function loadPersonalBoards(personalBoards) {
-    return new Promise(function(resolve, reject) {
-        $.ajax({
-            url: "http://localhost:3000/boards/personal",
-            success: function(response) {
-                if(response.hasOwnProperty("error")) {
-                    resolve([]);
-                    return;
-                }
-                displayPersonalBoards(response, personalBoards);
-                resolve(response);
-            }
-        });
-    });
+function displayTeamBoards(teams, teamBoards, boardTeamEntry) {
+    let temp = ``;
+    for(let i = 0; i < teams.length; ++i) {
+        boardTeamEntry.append(`<option value=${teams[i].teamName}>${teams[i].teamName}</option>`);
+        temp += `<div class="row team-boards-row" data-name="${teams[i].teamName}" data-id=${teams[i].teamId}>
+                    <i class="fas fa-users"></i> <h5>${teams[i].teamName}</h5> <br>`;
+        for(let j = 0; j < teams[i].boards.length; ++j) {
+            temp += `<div class="board-item board-box" data-id=${teams[i].boards[j].id}>${teams[i].boards[j].title}</div>`;
+        }
+        temp += `<div class="create-board-item board-box"><p>Create new board...</p></div>
+            </div>`;
+    }
+    teamBoards.append(temp);
 }
 
-function getTeamBoards(team_id) {
-    return new Promise(function(resolve, reject) {
-        $.ajax({
-            url: "http://localhost:3000/boards/team/" + team_id.toString(),
-            success: function(response) {
-                resolve(response);
-            }
-        });
+function displayAllBoards(response, personalBoards, teamBoards, boardTeamEntry) {
+    let personals = response.find(function(o) {
+        return o.teamId == null;
     });
+    if(personals)
+        displayPersonalBoards(personals.boards, personalBoards);
+    let teams = response.filter(function(o) {
+        return o.teamId != null;
+    });
+    displayTeamBoards(teams, teamBoards, boardTeamEntry);
 }
 
-function loadTeamBoards(teamBoards) {
+function getAllBoards(personalBoards, teamBoards, boardTeamEntry) {
     return new Promise(function(resolve, reject) {
-        let temp = ``;
         $.ajax({
-            url: "http://localhost:3000/teams/",
+            url: "http://localhost:3000/boards/all",
             success: function(response) {
-                let promises = [];
+                displayAllBoards(response, personalBoards, teamBoards, boardTeamEntry);
+                let all_boards = [];
                 for(let i = 0; i < response.length; ++i) {
-                    promises.push(getTeamBoards(response[i].id));
+                    all_boards = all_boards.concat(response[i].boards);
                 }
-                Promise.all(promises).then(function(team_boards_list) {
-                    for(let i = 0; i < team_boards_list.length; ++i) {
-                        temp += `<div class="row team-boards-row" data-name="${response[i].name}" data-id=${response[i].id}}>
-                        <i class="fas fa-users"></i> <h5>${response[i].name}</h5> <br>`
-                        for(let j = 0; j < team_boards_list[i].length; ++j) {
-                            temp += `<div class="board-item board-box" data-id=${team_boards_list[i][j].id}>${team_boards_list[i][j].title}</div>`;
-                        }
-                        temp += `<div class="create-board-item board-box"><p>Create new board...</p></div>
-                        </div>`
-                    }
-                    teamBoards.append(temp);
-                    let boards = [];
-                    for(let i = 0; i < team_boards_list.length; ++i) {
-                        boards = boards.concat(team_boards_list[[i]]);
-                    }
-                    resolve(boards);
-                });
-            }
+                resolve(all_boards);
+            },
+            error: function(thrown) {
+                showAlert("Error loading boards");
+                resolve([]);
+            }  
         });
     });
-}
-
-function getAllBoards(recentBoards, personalBoards, teamBoards) {
-    return new Promise(function(resolve, reject) {
-        let promises = [];
-        promises.push(loadPersonalBoards(personalBoards));
-        promises.push(loadTeamBoards(teamBoards));
-        Promise.all(promises).then(function(resolves) {
-            resolve(resolves[0].concat(resolves[1]));
-        });
-    });
+    
 }
 
 function createTeam(name) {
@@ -98,9 +76,9 @@ function createTeam(name) {
 function getTeamId(team_name) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/" + team_name,
+            url: "http://localhost:3000/teams/id/" + team_name,
             success: function(response) {
-                resolve(response);
+                resolve(response[0].id);
             },
             error: function(thrown) {
                 reject(thrown);
@@ -134,7 +112,6 @@ function createBoard(board_name, team_name) {
         }
         else {
             getTeamId(team_name).then(function(id) {
-                console.log(id);
                 sendCreateBoardRequest({name: board_name, teamId: id}).then(function(created) {
                     resolve(created);
                 });
@@ -147,6 +124,8 @@ $(function() {
     //const header = $("#header");
     const linktohome = $("#linktohome");
     const boardPage = $("#board-page");
+    const searchbar = $("#searchbar");
+    const matchList = $("#match-list");
     const recentBoards = boardPage.find("#recently-viewed-boards-row");
     const personalBoards = boardPage.find("#personal-boards-row");
     const teamBoards = boardPage.find("#team-rows-container");
@@ -165,8 +144,33 @@ $(function() {
     let new_lists = 0; 
     let boards = [];
 
-    getAllBoards(recentBoards, personalBoards, teamBoards).then(function(resolve) {
-        console.log(resolve);
+    searchbar.keyup(function() {
+        matchList.find(".match").remove();
+        let query = $(this).val();
+        let matches = boards.filter(function(b) {
+            return b.title.includes(query);
+        });
+        if(matches.length > 0) {
+            let temp = ``;
+            for(let i = 0; i < matches.length; ++i) {
+                temp += `<div class="match" data-index=${boards.indexOf(matches[i])}>${matches[i].title}</div>`
+            }
+            matchList.append(temp);
+            matchList.removeClass("hidden");
+        }
+        else {
+            matchList.addClass("hidden");
+        }
+    });
+
+    $("body").on("click", ".match", function() {
+        openBoard(boards[$(this).attr("data-index")]);
+        searchbar.val("");
+        searchbar.blur();
+        matchList.addClass("hidden");
+    });
+
+    getAllBoards(personalBoards, teamBoards, boardTeamEntry).then(function(resolve) {
         boards = resolve;
         linktohome.addClass("hidden");
         new_lists = 0;
@@ -245,9 +249,9 @@ $(function() {
 
     addBoardForm.on("submit", function(e) {
         e.preventDefault();
-        if(boardTitleEntry.val() != "") {
+        if(boardTitleEntry.val() != "" && boardTeamEntry.val() != "") {
             let board_name = boardTitleEntry.val();
-            let team_name = boardTeamEntry.val();
+            let team_name = $("#team-dropdown option:selected").text();
             createBoard(board_name, team_name).then(function(created) {
                 boards.push(created);
                 let temp = `<div class="board-item board-box" data-id=${created.id}>${created.title}</div>`;

@@ -12,6 +12,20 @@ router.get("/", function(req, res, next) {
     res.render("boards", {});
 });
 
+router.get("/all", function(req, res, next) {
+    let query = `SELECT "t"."id" "teamId", "t"."name" "teamName", json_agg("b".*) "boards" FROM "boards" b
+                    LEFT JOIN "teams" t ON "b"."teamId" = "t"."id"
+                    LEFT JOIN "teamUsers" tu on "t"."id" = "tu"."teamId"
+                    WHERE "tu"."userId" = :id OR "b"."ownerId" = :id
+                    GROUP BY "t"."id";`
+    let uid = req.session.id;
+    sequelize.query(query, {replacements: {id: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        res.json(response);
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Could not retrieve boards"));
+    });
+});
+
 router.get("/personal", function(req, res, next) {
     let uid = req.session.id;
     sequelize.query(`SELECT * FROM boards WHERE "ownerId" = :id`, {replacements: {id: uid}}).then(function(response) {
@@ -50,8 +64,8 @@ router.post("/", function(req, res, next) {
                 if(response.length > 0 && response.find(function(obj) {
                     return obj.userId == ownerId;
                 }) != undefined) {
-                    let query = `INSERT INTO "boards" VALUES (DEFAULT, NULL, :teamid, :title, :lastviewed) RETURNING *`;
-                    sequelize.query(query, {replacements: {teamid: teamId, title: name.trim(), lastviewed: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+                    let query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :lastviewed) RETURNING *`;
+                    sequelize.query(query, {replacements: {ownerid: ownerId, teamid: teamId, title: name.trim(), lastviewed: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
                         res.json(response[0][0]);
                     }).catch(function(thrown) {
                         next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Problem inserting board"));

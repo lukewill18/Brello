@@ -13,13 +13,19 @@ router.get("/", function(req, res, next) {
 
 router.get("/:id", function(req, res, next) {
     let user_id = req.session.id;
-    let query = `SELECT DISTINCT "l".*
+    let query = `SELECT DISTINCT ON ("l") "l".*, json_agg(DISTINCT "c".*) cards
                     FROM "lists" "l"
+                    LEFT JOIN "cards" c ON "l"."id" = "c"."listId"
                     INNER JOIN "boards" b ON "b"."id" = :boardid
                     LEFT JOIN "teamUsers" tu ON "tu"."teamId" = "b"."teamId"
                     WHERE ("l"."ownerId" = :id OR "tu"."userId" = :id) AND "l"."boardId" = :boardid
-                    ORDER BY "order" ASC`;
+                    GROUP BY "l"."id"`;
     sequelize.query(query, {replacements: {boardid: req.params.id, id: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        for(let i = 0; i < response.length; ++i) {
+            if(response[i].cards[0] == null) {
+                response[i].cards = [];
+            }
+        }
         res.render("lists", {lists: response, board_id: req.params.id})
     }).catch(function(thrown) {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid board ID"));

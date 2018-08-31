@@ -13,7 +13,7 @@ router.get("/", function(req, res, next) {
 });
 
 router.get("/all", function(req, res, next) {
-    let query = `SELECT "t"."id" "teamId", "t"."name" "teamName", json_agg("b".*) "boards" FROM "boards" b
+    let query = `SELECT "t"."id" "teamId", "t"."name" "teamName",  json_agg("b".*) "boards" FROM "boards" b
                     FULL OUTER JOIN "teams" t
                         ON "b"."teamId" = "t"."id"
                     LEFT JOIN "teamUsers" tu

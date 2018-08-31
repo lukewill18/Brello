@@ -35,7 +35,38 @@ function generateList(listname, list_id, cards) {
     return temp;
 }
 
+function createCard(name, listId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/cards/",
+            method: "POST",
+            data: {name, listId},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject();
+            }
+        });
+    });
+}
+
+function getCardInfo(cardId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/cards/" + cardId.toString(),
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject();
+            }
+        });
+    });
+}
+
 $(function() {
+    const linktohome = $("#linktohome");
     const listPage = $("#list-page")
     const cardModalContainer = listPage.find("#card-modal-container");
     const cardModal = cardModalContainer.find("#card-modal");
@@ -64,6 +95,8 @@ $(function() {
     let current_card;
     let clickX = 0;
     
+    linktohome.removeClass("hidden");
+
     function renderLists(board) {
         listContainer.find(".list").remove();
         for(let i = 0; i < board.lists.length; ++i) {
@@ -214,20 +247,13 @@ $(function() {
     
     function submitCardForm(cardname) {
         if(cardname.trim() != "") {
-            let entry = currentCardTemplate.find(".card-entry");
-            entry.val("");
-            entry.focus();
-            currentCardTemplate.parent().append(`<div class="card draggable">${cardname}</div>`);
-            let listname = currentCardTemplate.parent().data("name");
-            let list = current_board.lists.find(function(l) {
-                return l.name == listname;
+            createCard(cardname, currentCardTemplate.parent().attr("data-id")).then(function(created) {
+                let entry = currentCardTemplate.find(".card-entry");
+                entry.val("");
+                entry.focus();
+                currentCardTemplate.parent().append(`<div class="card draggable" data-id="${created.id}">${created.name}</div>`);
             });
-            list.cards.push({
-                name: cardname,
-                description: "",
-                labels: [],
-                comments: [] 
-            });
+            
         }
     }
     
@@ -249,9 +275,9 @@ $(function() {
             $(this).val("");
     });
     
-    function showCardModalDesc() {
-        if(current_card.description != "") {
-            cardModalDesc.text(current_card.description);
+    function showCardModalDesc(desc) {
+        if(desc != "") {
+            cardModalDesc.text(desc);
             cardModalDescEntry.addClass("hidden");
             cardModalSaveDescBtn.addClass("hidden");
             cardModalDesc.removeClass("hidden");
@@ -264,41 +290,40 @@ $(function() {
         }
     }
     
-    function showCardModalLabels() {
+    function showCardModalLabels(labels) {
         labelContainer.find(".label").remove();
         labelEntry.text("");
         let temp = ``;
-        for(let i = 0; i < current_card.labels.length; ++i) {
-            temp += `<div class="label"><span class="labelname">${current_card.labels[i]}</span>&ensp;<i class="fas fa-times remove-label"></i></div>`;
+        for(let i = 0; i < labels.length; ++i) {
+            temp += `<div class="label" data-id=${labels[i].id}><span class="labelname">${labels[i].name}</span>&ensp;<i class="fas fa-times remove-label"></i></div>`;
         }
         $(temp).insertBefore(labelEntry);
     }
     
-    function showCardModalComments() {
-        cardModal.height(650);
+    function showCardModalComments(comments) {
+        cardModal.height(665);
         commentList.find(".modal-comment-info").remove();
         cardModalCommentEntry.val("");
         let temp = ``;
-        for(let i = 0; i < current_card.comments.length; ++i) {
-            temp += generateComment(current_card.comments[i].comment, current_card.comments[i].date);
+        for(let i = 0; i < comments.length; ++i) {
+            temp += generateComment(comments[i]);
         }  
         commentList.append(temp);
         cardModal.height(cardModal.height() + commentList.innerHeight());
     }
     
-    function showCardModal(cardname, listname) {
-        cardModalContainer.removeClass("hidden");
-        cardModal.find(".btn-ready").removeClass("btn-ready");
-        cardModalName.text(cardname);
-        cardModalList.text(listname);
-        current_card = current_board.lists.find(function(l) {
-            return l.name == listname;
-        }).cards.find(function(c) {
-            return c.name == cardname;
+    function showCardModal(cardname, listname, cardId) {
+        getCardInfo(cardId).then(function(cardInfo) {
+            console.log(cardInfo);
+            cardModalContainer.removeClass("hidden");
+            cardModal.find(".btn-ready").removeClass("btn-ready");
+            cardModalName.text(cardname);
+            cardModalList.text(listname);
+            showCardModalDesc(cardInfo.description);    
+            showCardModalLabels(cardInfo.labels);
+            showCardModalComments(cardInfo.comments);
         });
-        showCardModalDesc();
-        showCardModalLabels();
-        showCardModalComments();
+        
     }
     
     function hideCardModal() {
@@ -306,7 +331,7 @@ $(function() {
     }
     
     listList.on("click", ".card", function() {
-        showCardModal($(this).text(), $(this).parent().data("name"));
+        showCardModal($(this).text(), $(this).siblings(".list-title").text(), $(this).attr("data-id"));
     });
     
     cardModalContainer.click(function(e) {
@@ -328,11 +353,12 @@ $(function() {
     
     cardModalSaveDescBtn.click(function() {
         let desc = cardModalDescEntry.val();
-        current_card.description = desc;
-        cardModalDesc.text(desc);
-        cardModalDescEntry.addClass("hidden");
-        $(this).addClass("hidden");
-        cardModalDesc.removeClass("hidden");
+        changeDescription(desc).then(function(response) {
+            cardModalDesc.text(desc);
+            cardModalDescEntry.addClass("hidden");
+            $(this).addClass("hidden");
+            cardModalDesc.removeClass("hidden");
+        });
     });
     
     cardModalDesc.click(function() {
@@ -375,12 +401,12 @@ $(function() {
         current_card.labels.splice(current_card.labels.indexOf($(this).siblings(".labelname").text()), 1)
     });
     
-    function generateComment(comment, date) {
-        return `<li class="modal-comment-info">
+    function generateComment(comment) {
+        return `<li class="modal-comment-info" data-id=${comment.id}>
                     <div class="user-icon modal-user-icon"></div>
-                    <h5 class="modal-comment-name">John Doe</h5>
-                    <p class="modal-comment-time">${date}</p>
-                    <div class="modal-comment"><p>${comment}</p></div>
+                    <h5 class="modal-comment-name">${comment.userFirst + " " + comment.userLast }</h5>
+                    <p class="modal-comment-time">${comment.date}</p>
+                    <div class="modal-comment"><p>${comment.body}</p></div>
                     <div class="solid-line"></div>
                 </li>`;
     }
@@ -409,7 +435,7 @@ $(function() {
     });
     
     function switchToListPage(current) {
-        linktohome.removeClass("hidden");
+        
         hideCardModal();
         switchPage(current, listPage);
         current_board.lastViewed = Date.now();

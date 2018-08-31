@@ -51,13 +51,16 @@
                     <% lists.forEach(function(list) { %>
                          <div class="list" data-id=<%=list.id%>> 
                               <h6 class="list-title draggable"><%=list.name%></h6>
+                            <% list.cards.forEach(function(card) { %>
+                                    <div class="card draggable" data-id=<%=card.id%>><%=card.name%></div>
+                            <% }); %> 
                             <div class="add-card">+ Add a card</div>
                              <div class="add-card-template hidden"> 
                                  <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
                                  <button class="btn add-card-btn">Add Card</button> <i class="fas fa-times close-template"></i>
                              </div> 
                           </div> 
-                    <% }) %>
+                    <% }); %>
                 </div>
                 <div id="add-list"><p id="add-list-p">+ Add a list</p></div>
                 <div id="add-list-template" class="hidden">

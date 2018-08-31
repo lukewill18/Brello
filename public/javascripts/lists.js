@@ -65,6 +65,38 @@ function getCardInfo(cardId) {
     });
 }
 
+function changeDescription(description, cardId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/cards/" + cardId.toString() + "/description",
+            method: "PATCH",
+            data: {description},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject();
+            }
+        });
+    });
+}
+
+function createComment(comment, cardId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/cards/" + cardId.toString() + "/comment",
+            method: "POST",
+            data: {comment},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject();
+            }
+        });
+    });
+}
+
 $(function() {
     const linktohome = $("#linktohome");
     const listPage = $("#list-page")
@@ -306,7 +338,7 @@ $(function() {
         cardModalCommentEntry.val("");
         let temp = ``;
         for(let i = 0; i < comments.length; ++i) {
-            temp += generateComment(comments[i]);
+            temp += generateComment(comments[i], false);
         }  
         commentList.append(temp);
         cardModal.height(cardModal.height() + commentList.innerHeight());
@@ -314,9 +346,9 @@ $(function() {
     
     function showCardModal(cardname, listname, cardId) {
         getCardInfo(cardId).then(function(cardInfo) {
-            console.log(cardInfo);
             cardModalContainer.removeClass("hidden");
             cardModal.find(".btn-ready").removeClass("btn-ready");
+            cardModal.attr("data-id", cardId);
             cardModalName.text(cardname);
             cardModalList.text(listname);
             showCardModalDesc(cardInfo.description);    
@@ -353,10 +385,10 @@ $(function() {
     
     cardModalSaveDescBtn.click(function() {
         let desc = cardModalDescEntry.val();
-        changeDescription(desc).then(function(response) {
-            cardModalDesc.text(desc);
+        changeDescription(desc, $(this).parent().attr("data-id")).then(function(response) {
+            cardModalDesc.text(response.description);
             cardModalDescEntry.addClass("hidden");
-            $(this).addClass("hidden");
+            cardModalSaveDescBtn.addClass("hidden");
             cardModalDesc.removeClass("hidden");
         });
     });
@@ -401,11 +433,13 @@ $(function() {
         current_card.labels.splice(current_card.labels.indexOf($(this).siblings(".labelname").text()), 1)
     });
     
-    function generateComment(comment) {
+    function generateComment(comment, name_concatted) {
+        let name = name_concatted ? comment.name : comment.userFirst + " " + comment.userLast;
+        let date = name_concatted ? comment.datetime : comment.date;
         return `<li class="modal-comment-info" data-id=${comment.id}>
                     <div class="user-icon modal-user-icon"></div>
-                    <h5 class="modal-comment-name">${comment.userFirst + " " + comment.userLast }</h5>
-                    <p class="modal-comment-time">${comment.date}</p>
+                    <h5 class="modal-comment-name">${name}</h5>
+                    <p class="modal-comment-time">${date}</p>
                     <div class="modal-comment"><p>${comment.body}</p></div>
                     <div class="solid-line"></div>
                 </li>`;
@@ -421,16 +455,14 @@ $(function() {
     cardModalSaveCommentBtn.click(function() {
         let comment = cardModalCommentEntry.val();
         if(comment.trim() != "") {
-            let date = moment().format('MMMM Do YYYY, h:mm:ss a');
-            let temp = $(generateComment(comment, date));
-            commentList.prepend(temp);
-            cardModal.height(cardModal.height() + temp.innerHeight());
-            current_card.comments.unshift({
-                comment: comment,
-                date: date
+            createComment(comment, $(this).parent().attr("data-id")).then(function(created) {
+                let temp = $(generateComment(created, true));
+                commentList.prepend(temp);
+                cardModal.height(cardModal.height() + temp.innerHeight());
+                cardModalCommentEntry.val("");
+                cardModalSaveCommentBtn.removeClass("btn-ready");
             });
-            cardModalCommentEntry.val("");
-            $(this).removeClass("btn-ready");
+            
         }
     });
     

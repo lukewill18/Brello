@@ -1,11 +1,32 @@
 var express = require('express');
 var HTTPStatus = require("http-status");
 var createError = require("http-errors");
+let moment = require('moment');
 var db = require("../models/index.js");
 var Sequelize = db.Sequelize;
 var sequelize = db.sequelize;
 
 var router = express.Router();
+
+function verifyAccess(req, res, next) {
+    let user_id = req.session.id;
+    let cardId = req.params.id;
+    let query = `SELECT DISTINCT "c"."id" FROM "cards" "c"
+                    INNER JOIN "lists" "l" ON "l"."id" = "c"."listId"
+                    INNER JOIN "boards" "b" ON "b"."id" = "l"."boardId"
+                    INNER JOIN "users" "u" ON "b"."ownerId" = "u"."id"
+                    LEFT JOIN "teamUsers" "tu" ON "b"."teamId" = "tu"."teamId"
+                    WHERE (:id = "b"."ownerId" OR :id = "tu"."userId") AND ("c"."id" = :cardId);`;
+    sequelize.query(query, {replacements: {id: user_id, cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        if(response.length == 0)
+            next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this card"));
+        else   
+            next();
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this card"));
+    });
+
+}
 
 router.get("/:id", function(req, res, next) {
     let user_id = req.session.id;
@@ -49,4 +70,52 @@ router.post("/", function(req, res, next) {
     }
 });
 
+router.patch("/:id/description", verifyAccess, function(req, res, next) {
+    let cardId = req.params.id;
+    let newDesc = req.body.description;
+    if(newDesc == undefined || newDesc.trim() == "")
+        next(createError(HTTPStatus.BAD_REQUEST, "Missing new description"));
+    else {
+        let query = `UPDATE "cards"
+                        SET "description" = :newDesc
+                        WHERE "id" = :cardId
+                        RETURNING "description";`;
+        sequelize.query(query, {replacements: {newDesc: newDesc.trim(), cardId: cardId}, type: sequelize.QueryTypes.UPDATE}).then(function(response) {
+            res.json(response[0][0]);
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not update description"));
+        });
+    }
+});
+
+router.post("/:id/comment", verifyAccess, function(req, res, next) {
+    let user_id = req.session.id;
+    let cardId = req.params.id;
+    let comment = req.body.comment;
+    if(comment == undefined || comment.trim() == "")
+        next(createError(HTTPStatus.BAD_REQUEST, "Missing commment"));
+    else {
+        let query = `INSERT INTO "comments" VALUES (DEFAULT, :cardId, :userId, :date, :comment)
+                        RETURNING *, (SELECT concat("firstName", ' ', "lastName") FROM "users"
+                        WHERE "id" = :userId) "name";`;
+        sequelize.query(query, {replacements: {cardId: cardId, userId: user_id, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), comment: comment},
+        type: sequelize.QueryTypes.INSERT}).then(function(response) {
+            res.json(response[0][0]);
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.BAD_REQUEST, "Could not insert comment"));
+        });
+        
+    }
+});
+
+router.post("/:id/label", verifyAccess, function(req, res, next) {
+    let user_id = req.session.id;
+    let cardId = req.params.id;
+    let name = req.body.name;
+    if(name == undefined || name.trim() == "")
+        next(createError(HTTPStatus.BAD_REQUEST, "Missing label name"));
+    else {
+        let query = ``;
+    }
+});
 module.exports = router;

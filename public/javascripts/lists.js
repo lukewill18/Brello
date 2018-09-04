@@ -21,7 +21,7 @@ function addList(listname, boardId) {
 }
 
 function generateList(listname, list_id, cards) {
-    let temp = `<div class="list" id="new-list-${list_id}">
+    let temp = `<div class="list" id="new-list-${list_id}" data-id=${list_id}>
                     <h6 class="list-title draggable">${listname}</h6>
                     <div class="add-card">+ Add a card</div>
                     <div class="add-card-template hidden">
@@ -128,17 +128,6 @@ $(function() {
     let clickX = 0;
     
     linktohome.removeClass("hidden");
-
-    function renderLists(board) {
-        listContainer.find(".list").remove();
-        for(let i = 0; i < board.lists.length; ++i) {
-            let l = board.lists[i];
-            let temp = ($(generateList(l.name, ++new_lists, l.cards)));
-            temp.data("name", l.name);
-            listContainer.append(temp);
-            card_drag.addContainer(document.querySelector("#new-list-" + new_lists.toString()));
-        }   
-    }
     
     let card_drag = new Draggable.Sortable(document.querySelectorAll(".list"), {
         draggable: '.card',
@@ -249,17 +238,13 @@ $(function() {
         e.preventDefault();
         let listname = listEntry.val();
         if(listname.trim() != "") {
-            /*current_board.lists.push({
-                name: listname,
-                cards: []
-            });*/
-            addList(listname, listList.attr("data-board-id")).then(function() {
-                let temp = $(generateList(listname, ++new_lists, []));
-                temp.data("name", listname);
+            addList(listname, listList.attr("data-board-id")).then(function(resolve) {
+                let temp = $(generateList(resolve.name, resolve.id, []));
+                temp.data("name", resolve.name);
                 listContainer.append(temp);
                 listEntry.val("");
                 listEntry.focus();
-                card_drag.addContainer(document.querySelector("#new-list-" + new_lists.toString()));
+                card_drag.addContainer(document.querySelector("#new-list-" + (resolve.id).toString()));
                 listList.scrollLeft(listContainer.width());
             });
         }

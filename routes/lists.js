@@ -42,7 +42,7 @@ router.post("/", function(req, res, next) {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
     else {
         sequelize.query(query, {replacements: {id: user_id, boardid: boardId, listname: listname}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
-            res.json(response[0]);
+            res.json(response[0][0]);
         }).catch(function(thrown) {
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
         });

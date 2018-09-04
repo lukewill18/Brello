@@ -59,12 +59,15 @@ router.post("/", function(req, res, next) {
     let {name, listId} = req.body;
     let user_id = req.session.id;
     if(name == undefined || listId == undefined || name.trim() == "" || listId.trim() == "")
-        next(createError(HTTPStatus.BAD_REQUEST, "Invalid name or list ID"));
+        {
+            next(createError(HTTPStatus.BAD_REQUEST, "Invalid name or list ID"));
+        }
     else {
         let query = `INSERT INTO "cards" VALUES (DEFAULT, :id, :listid, DEFAULT, :name, '') RETURNING "id", "name";`;
         sequelize.query(query, {replacements: {id: user_id, listid: listId, name: name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
             res.json(response[0][0]);
         }).catch(function(thrown) {
+            console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not create card"));
         });
     }
@@ -109,13 +112,31 @@ router.post("/:id/comment", verifyAccess, function(req, res, next) {
 });
 
 router.post("/:id/label", verifyAccess, function(req, res, next) {
-    let user_id = req.session.id;
     let cardId = req.params.id;
     let name = req.body.name;
     if(name == undefined || name.trim() == "")
         next(createError(HTTPStatus.BAD_REQUEST, "Missing label name"));
     else {
-        let query = ``;
+        let q1 = `INSERT INTO "labels"
+                    VALUES (DEFAULT, :name)
+                    ON CONFLICT (name)
+                    DO NOTHING
+                    RETURNING *;`;
+        sequelize.query(q1, {replacements: {name: name}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+            let q2 = `INSERT INTO "cardLabels" VALUES ((SELECT "id" FROM "labels" WHERE "name" = :name), :cardId)
+                        RETURNING *;`;
+            sequelize.query(q2, {replacements: {name: name, cardId: cardId}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+                res.json(response);
+            }).catch(function(thrown) {
+                console.log(thrown);
+                next(createError(HTTPStatus.BAD_REQUEST, "label already belongs to card"));
+            });
+        }).catch(function(thrown) {
+            console.log(thrown);
+            next(createError(HTTPStatus.BAD_REQUEST, "label could not be created"));
+        });
+
+        
     }
 });
 module.exports = router;

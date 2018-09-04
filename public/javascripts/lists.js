@@ -97,6 +97,38 @@ function createComment(comment, cardId) {
     });
 }
 
+function createLabel(name, cardId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/cards/" + cardId.toString() + "/label",
+            method: "POST",
+            data: {name},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
+function removeLabel(labelId, cardId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/cards/" + cardId.toString() + "/label",
+            method: "DELETE",
+            data: {labelId},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
 $(function() {
     const linktohome = $("#linktohome");
     const listPage = $("#list-page")
@@ -323,7 +355,7 @@ $(function() {
         cardModalCommentEntry.val("");
         let temp = ``;
         for(let i = 0; i < comments.length; ++i) {
-            temp += generateComment(comments[i], false);
+            temp += generateComment(comments[i]);
         }  
         commentList.append(temp);
         cardModal.height(cardModal.height() + commentList.innerHeight());
@@ -370,7 +402,7 @@ $(function() {
     
     cardModalSaveDescBtn.click(function() {
         let desc = cardModalDescEntry.val();
-        changeDescription(desc, $(this).parent().attr("data-id")).then(function(response) {
+        changeDescription(desc, cardModal.attr("data-id")).then(function(response) {
             cardModalDesc.text(response.description);
             cardModalDescEntry.addClass("hidden");
             cardModalSaveDescBtn.addClass("hidden");
@@ -395,17 +427,21 @@ $(function() {
         if(e.keyCode == 13) {
             e.preventDefault();            
             let label = $(this).text().trim();
-            if(label != "" && current_card.labels.indexOf(label) == -1) {
-                current_card.labels.push(label);
-                $(`<div class="label"><span class="labelname">${label}</span>&ensp;<i class="fas fa-times remove-label"></i></div>`).insertBefore($(this));
-                $(this).text("");
+            if(label != "") {
+                createLabel(label, cardModal.attr("data-id")).then(function(resolve) {
+                    $(`<div class="label" data-id=${resolve.labelId}><span class="labelname">${label}</span>&ensp;<i class="fas fa-times remove-label"></i></div>`).insertBefore(labelEntry);
+                    labelEntry.text("");
+                }).catch(function(thrown) {
+                    console.log(thrown);
+                });
             }
         }
         else if(e.keyCode == 8 && $(this).text() == "") {
             let last = labelContainer.find(".label").last();
             if(last.length > 0) {
-                last.remove();
-                current_card.labels.splice(current_card.labels.indexOf(last.find(".labelname").text()), 1)
+                removeLabel(last.attr("data-id"), cardModal.attr("data-id")).then(function(resolve) {
+                    last.remove();
+                });
             }
         }
         else if(e.keyCode == 27) {
@@ -414,17 +450,17 @@ $(function() {
     });
     
     labelContainer.on("click", ".remove-label", function() {
-        $(this).parent().remove();
-        current_card.labels.splice(current_card.labels.indexOf($(this).siblings(".labelname").text()), 1)
+        let label = $(this).parent();
+        removeLabel(label.attr("data-id"), cardModal.attr("data-id")).then(function(resolve) {
+            label.remove();
+        });
     });
     
-    function generateComment(comment, name_concatted) {
-        let name = name_concatted ? comment.name : comment.userFirst + " " + comment.userLast;
-        let date = name_concatted ? comment.datetime : comment.date;
+    function generateComment(comment) {
         return `<li class="modal-comment-info" data-id=${comment.id}>
                     <div class="user-icon modal-user-icon"></div>
-                    <h5 class="modal-comment-name">${name}</h5>
-                    <p class="modal-comment-time">${date}</p>
+                    <h5 class="modal-comment-name">${comment.name}</h5>
+                    <p class="modal-comment-time">${comment.datetime}</p>
                     <div class="modal-comment"><p>${comment.body}</p></div>
                     <div class="solid-line"></div>
                 </li>`;
@@ -440,8 +476,8 @@ $(function() {
     cardModalSaveCommentBtn.click(function() {
         let comment = cardModalCommentEntry.val();
         if(comment.trim() != "") {
-            createComment(comment, $(this).parent().attr("data-id")).then(function(created) {
-                let temp = $(generateComment(created, true));
+            createComment(comment, cardModal.attr("data-id")).then(function(created) {
+                let temp = $(generateComment(created));
                 commentList.prepend(temp);
                 cardModal.height(cardModal.height() + temp.innerHeight());
                 cardModalCommentEntry.val("");

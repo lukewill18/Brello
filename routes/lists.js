@@ -12,8 +12,8 @@ router.get("/", function(req, res, next) {
 });
 
 router.get("/:id", function(req, res, next) {
-    let user_id = req.session.id;
-    let query = `SELECT DISTINCT ON ("l") "l".*, json_agg(DISTINCT "c".*) cards
+    const user_id = req.session.id;
+    const query = `SELECT DISTINCT ON ("l") "l".*, json_agg(DISTINCT "c".*) cards
                     FROM "lists" "l"
                     LEFT JOIN "cards" c ON "l"."id" = "c"."listId"
                     INNER JOIN "boards" b ON "b"."id" = :boardid
@@ -22,7 +22,7 @@ router.get("/:id", function(req, res, next) {
                     GROUP BY "l"."id"`;
     sequelize.query(query, {replacements: {boardid: req.params.id, id: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         for(let i = 0; i < response.length; ++i) {
-            if(response[i].cards[0] == null) {
+            if(response[i].cards[0] === null) {
                 response[i].cards = [];
             }
         }
@@ -33,12 +33,12 @@ router.get("/:id", function(req, res, next) {
 });
 
 router.post("/", function(req, res, next) {
-    let user_id = req.session.id;
-    let query = `INSERT INTO "lists"
+    const user_id = req.session.id;
+    const query = `INSERT INTO "lists"
                     VALUES (DEFAULT, :id, :boardid, DEFAULT, :listname)
                     RETURNING *`;
-    let {listname, boardId} = req.body;
-    if(listname == undefined || boardId == undefined || listname.trim() == "" || boardId.trim() == "")
+    const {listname, boardId} = req.body;
+    if(listname === undefined || boardId === undefined || listname.trim() === "" || boardId.trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
     else {
         sequelize.query(query, {replacements: {id: user_id, boardid: boardId, listname: listname}, type: sequelize.QueryTypes.INSERT}).then(function(response) {

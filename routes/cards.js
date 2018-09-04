@@ -1,7 +1,7 @@
 var express = require('express');
 var HTTPStatus = require("http-status");
 var createError = require("http-errors");
-let moment = require('moment');
+var moment = require('moment');
 var db = require("../models/index.js");
 var Sequelize = db.Sequelize;
 var sequelize = db.sequelize;
@@ -9,16 +9,16 @@ var sequelize = db.sequelize;
 var router = express.Router();
 
 function verifyAccess(req, res, next) {
-    let user_id = req.session.id;
-    let cardId = req.params.id;
-    let query = `SELECT DISTINCT "c"."id" FROM "cards" "c"
+    const user_id = req.session.id;
+    const cardId = req.params.id;
+    const query = `SELECT DISTINCT "c"."id" FROM "cards" "c"
                     INNER JOIN "lists" "l" ON "l"."id" = "c"."listId"
                     INNER JOIN "boards" "b" ON "b"."id" = "l"."boardId"
                     INNER JOIN "users" "u" ON "b"."ownerId" = "u"."id"
                     LEFT JOIN "teamUsers" "tu" ON "b"."teamId" = "tu"."teamId"
                     WHERE (:id = "b"."ownerId" OR :id = "tu"."userId") AND ("c"."id" = :cardId);`;
     sequelize.query(query, {replacements: {id: user_id, cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
-        if(response.length == 0)
+        if(response.length === 0)
             next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this card"));
         else   
             next();
@@ -28,10 +28,16 @@ function verifyAccess(req, res, next) {
 
 }
 
-router.get("/:id", function(req, res, next) {
-    let user_id = req.session.id;
-    let cardId = req.params.id;
-    let query = `SELECT DISTINCT ON ("c") "c"."id", "c"."description", json_agg(DISTINCT "lab".*) "labels",
+router.get("/:id", verifyAccess, function(req, res, next) {
+    const cardId = req.params.id;
+    let card = {
+        id: null,
+        description: null,
+        comments: [],
+        labels: []
+    }
+    const err_invalid = createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not find card");
+    /*const query = `SELECT DISTINCT ON ("c") "c"."id", "c"."description", json_agg(DISTINCT "lab".*) "labels",
                     json_agg(DISTINCT jsonb_build_object('id', "com"."id", 'userFirst', "u"."firstName", 'userLast', "u"."lastName", 'date', "com"."datetime", 'body', "com"."body")) "comments"
                     FROM "cards" c
                     INNER JOIN "lists" l ON "l"."id" = "c"."listId"
@@ -42,30 +48,53 @@ router.get("/:id", function(req, res, next) {
                     LEFT JOIN "comments" com ON "com"."cardId" = "c"."id"
                     LEFT JOIN "users" "u" ON "u"."id" = "com"."userId"
                     WHERE "c"."id" = :cardId AND ("tu"."userId" = :id OR "b"."ownerId" = :id)
-                    GROUP BY "c"."id";`;
-    sequelize.query(query, {replacements: {cardId: cardId, id: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+                    GROUP BY "c"."id";`;*/
+    const q1 = `SELECT "id", "description" FROM "cards"
+                WHERE "id" = :cardId;`;
+
+    const q2 = `SELECT "l".* FROM "labels" l
+                LEFT JOIN "cardLabels" cl ON "cl"."cardId" = :cardId
+                WHERE "l"."id" = "cl"."labelId"
+                ORDER BY "cl"."addedAt" ASC;`;
+
+    const q3 = `SELECT *, (SELECT concat("firstName", ' ', "lastName") FROM "users"
+                    WHERE "id" = "c"."userId") "name"
+                    FROM "comments" c
+                    WHERE "cardId" = :cardId
+                    ORDER BY "datetime" DESC;`;
+    sequelize.query(q1, {replacements: {cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         let relevant = response[0];
-        if(relevant.comments[0].id == null)
-            relevant.comments = [];
-        if(relevant.labels[0] == null)
-            relevant.labels = [];
-        res.json(relevant);
+        card.id = relevant.id;
+        card.description = relevant.description;
+        sequelize.query(q2, {replacements: {cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+            card.labels = response;
+            sequelize.query(q3, {replacements: {cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+                card.comments = response;
+                res.json(card);
+            }).catch(function(thrown) {
+                next(err_invalid);
+        });
+        }).catch(function(thrown) {
+            next(err_invalid);
+        });
+        //res.json(relevant);
     }).catch(function(thrown) {
-        next(createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not find card"));
+        next(err_invalid);
     });
 });
 
 router.post("/", function(req, res, next) {
-    let {name, listId} = req.body;
-    let user_id = req.session.id;
-    if(name == undefined || listId == undefined || name.trim() == "" || listId.trim() == "")
-        {
-            next(createError(HTTPStatus.BAD_REQUEST, "Invalid name or list ID"));
-        }
+    const {name, listId} = req.body;
+    const user_id = req.session.id;
+    if(name === undefined || listId === undefined || name.toString().trim() === "" || listId.toString().trim() === "") {
+        console.log(name);
+        console.log(listId);
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid name or list ID"));
+    }
     else {
-        let query = `INSERT INTO "cards" VALUES (DEFAULT, :id, :listid, DEFAULT, :name, '') RETURNING "id", "name";`;
-        sequelize.query(query, {replacements: {id: user_id, listid: listId, name: name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
-            res.json(response[0][0]);
+        let query = `INSERT INTO "cards" VALUES (DEFAULT, :id, :listid, 0, :date, :name, '') RETURNING "id", "name";`;
+        sequelize.query(query, {replacements: {id: user_id, listid: listId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), name: name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+            res.status(HTTPStatus.CREATED).json(response[0][0]);
         }).catch(function(thrown) {
             console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not create card"));
@@ -74,12 +103,12 @@ router.post("/", function(req, res, next) {
 });
 
 router.patch("/:id/description", verifyAccess, function(req, res, next) {
-    let cardId = req.params.id;
-    let newDesc = req.body.description;
-    if(newDesc == undefined || newDesc.trim() == "")
+    const cardId = req.params.id;
+    const newDesc = req.body.description;
+    if(newDesc === undefined || newDesc.toString().trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Missing new description"));
     else {
-        let query = `UPDATE "cards"
+        const query = `UPDATE "cards"
                         SET "description" = :newDesc
                         WHERE "id" = :cardId
                         RETURNING "description";`;
@@ -92,18 +121,18 @@ router.patch("/:id/description", verifyAccess, function(req, res, next) {
 });
 
 router.post("/:id/comment", verifyAccess, function(req, res, next) {
-    let user_id = req.session.id;
-    let cardId = req.params.id;
-    let comment = req.body.comment;
-    if(comment == undefined || comment.trim() == "")
+    const user_id = req.session.id;
+    const cardId = req.params.id;
+    const comment = req.body.comment;
+    if(comment === undefined || comment.toString().trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Missing commment"));
     else {
-        let query = `INSERT INTO "comments" VALUES (DEFAULT, :cardId, :userId, :date, :comment)
+        const query = `INSERT INTO "comments" VALUES (DEFAULT, :cardId, :userId, :date, :comment)
                         RETURNING *, (SELECT concat("firstName", ' ', "lastName") FROM "users"
                         WHERE "id" = :userId) "name";`;
         sequelize.query(query, {replacements: {cardId: cardId, userId: user_id, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), comment: comment},
         type: sequelize.QueryTypes.INSERT}).then(function(response) {
-            res.json(response[0][0]);
+            res.status(HTTPStatus.CREATED).json(response[0][0]);
         }).catch(function(thrown) {
             next(createError(HTTPStatus.BAD_REQUEST, "Could not insert comment"));
         });
@@ -112,21 +141,21 @@ router.post("/:id/comment", verifyAccess, function(req, res, next) {
 });
 
 router.post("/:id/label", verifyAccess, function(req, res, next) {
-    let cardId = req.params.id;
-    let name = req.body.name;
-    if(name == undefined || name.trim() == "")
+    const cardId = req.params.id;
+    const name = req.body.name;
+    if(name === undefined || name.toString().trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Missing label name"));
     else {
-        let q1 = `INSERT INTO "labels"
+        const q1 = `INSERT INTO "labels"
                     VALUES (DEFAULT, :name)
                     ON CONFLICT (name)
                     DO NOTHING
                     RETURNING *;`;
         sequelize.query(q1, {replacements: {name: name}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
-            let q2 = `INSERT INTO "cardLabels" VALUES ((SELECT "id" FROM "labels" WHERE "name" = :name), :cardId)
+            const q2 = `INSERT INTO "cardLabels" VALUES ((SELECT "id" FROM "labels" WHERE "name" = :name), :cardId, :date)
                         RETURNING *;`;
-            sequelize.query(q2, {replacements: {name: name, cardId: cardId}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
-                res.json(response);
+            sequelize.query(q2, {replacements: {name: name, cardId: cardId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+                res.status(HTTPStatus.CREATED).json(response[0][0]);
             }).catch(function(thrown) {
                 console.log(thrown);
                 next(createError(HTTPStatus.BAD_REQUEST, "label already belongs to card"));
@@ -134,9 +163,23 @@ router.post("/:id/label", verifyAccess, function(req, res, next) {
         }).catch(function(thrown) {
             console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "label could not be created"));
-        });
+        });        
+    }
+});
 
-        
+router.delete("/:id/label", verifyAccess, function(req, res, next) {
+    const cardId = req.params.id;
+    const labelId = req.body.labelId;
+    if(labelId === undefined || labelId.toString().trim() === "")
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid label ID"));
+    else {
+        const query = `DELETE FROM "cardLabels"
+                        WHERE "cardId" = :cardId AND "labelId" = :labelId;`;
+        sequelize.query(query, {replacements: {cardId: cardId, labelId: labelId}, type: sequelize.QueryTypes.DELETE}).then(function(response) {
+            res.json(response);
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "label could not be deleted"));
+        });
     }
 });
 module.exports = router;

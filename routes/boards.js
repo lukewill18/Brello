@@ -1,7 +1,7 @@
 var express = require('express');
 var HTTPStatus = require("http-status");
 var createError = require("http-errors");
-let moment = require("moment");
+var moment = require("moment");
 var db = require("../models/index.js");
 var sequelize = db.sequelize;
 var Sequelize = db.Sequelize;
@@ -13,14 +13,14 @@ router.get("/", function(req, res, next) {
 });
 
 router.get("/all", function(req, res, next) {
-    let query = `SELECT "t"."id" "teamId", "t"."name" "teamName",  json_agg("b".*) "boards" FROM "boards" b
+    const query = `SELECT "t"."id" "teamId", "t"."name" "teamName",  json_agg("b".*) "boards" FROM "boards" b
                     FULL OUTER JOIN "teams" t
                         ON "b"."teamId" = "t"."id"
                     LEFT JOIN "teamUsers" tu
                         ON "t"."id" = "tu"."teamId" AND :id = "tu"."userId"
                     WHERE "tu"."userId" = :id OR "b"."ownerId" = :id
                     GROUP BY "t"."id";`;
-    let uid = req.session.id;
+    const uid = req.session.id;
     sequelize.query(query, {replacements: {id: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         res.json(response);
     }).catch(function(thrown) {
@@ -29,7 +29,7 @@ router.get("/all", function(req, res, next) {
 });
 
 router.get("/personal", function(req, res, next) {
-    let uid = req.session.id;
+    const uid = req.session.id;
     sequelize.query(`SELECT * FROM boards WHERE "ownerId" = :id`, {replacements: {id: uid}}).then(function(response) {
         res.json(response[0]);
     }).catch(function(thrown) {
@@ -39,12 +39,12 @@ router.get("/personal", function(req, res, next) {
 });
 
 router.get("/team/:id", function(req, res, next) {
-    let uid = req.session.id;
-    let teamId = req.params.id;
-    if(teamId == undefined || teamId.trim() == "")
+    const uid = req.session.id;
+    const teamId = req.params.id;
+    if(teamId === undefined || teamId.trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid Team ID"));
     else {
-        let query = `SELECT * FROM "boards" WHERE "teamId" = :teamId AND EXISTS (SELECT * FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :uid)`;
+        const query = `SELECT * FROM "boards" WHERE "teamId" = :teamId AND EXISTS (SELECT * FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :uid)`;
         sequelize.query(query, {replacements: {teamId: teamId, uid: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
             res.json(response);
         }).catch(function(thrown) {
@@ -54,19 +54,19 @@ router.get("/team/:id", function(req, res, next) {
 });
 
 router.post("/", function(req, res, next) {
-    let name = req.body.name;
-    let teamId = req.body.teamId;
-    let ownerId = req.session.id;
-    if(ownerId == undefined || name == undefined || name.trim() == "")
+    const name = req.body.name;
+    const teamId = req.body.teamId;
+    const ownerId = req.session.id;
+    if(ownerId === undefined || name === undefined || name.trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid input"));
     else {
         if(teamId != undefined) {
-            let q1 = `SELECT * FROM "teamUsers" WHERE "teamId" = :teamId`;
+            const q1 = `SELECT * FROM "teamUsers" WHERE "teamId" = :teamId`;
             sequelize.query(q1, {replacements: {teamId: teamId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
                 if(response.length > 0 && response.find(function(obj) {
-                    return obj.userId == ownerId;
+                    return obj.userId === ownerId;
                 }) != undefined) {
-                    let query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :lastviewed) RETURNING *`;
+                    const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :lastviewed) RETURNING *`;
                     sequelize.query(query, {replacements: {ownerid: ownerId, teamid: teamId, title: name.trim(), lastviewed: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
                         res.json(response[0][0]);
                     }).catch(function(thrown) {
@@ -81,7 +81,7 @@ router.post("/", function(req, res, next) {
             });
         }
         else {
-            let query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, NULL, :title, :lastviewed) RETURNING *`;
+            const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, NULL, :title, :lastviewed) RETURNING *`;
             sequelize.query(query, {replacements: {ownerid: ownerId, title: name.trim(), lastviewed: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
                 res.json(response[0][0]);
             }).catch(function(thrown) {

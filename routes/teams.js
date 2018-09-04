@@ -7,9 +7,8 @@ var sequelize = db.sequelize;
 var router = express.Router();
 
 router.get("/id/:name", function(req, res, next) { // get team id associated with team name
-    let name = req.params.name;
-    let user_id = req.session.id;
-    if(name == undefined || name.trim() == "") 
+    const name = req.params.name;
+    if(name === undefined || name.trim() === "") 
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid input"));
     else {
         let q1 = `SELECT "id" FROM "teams" WHERE "name" = :name`;
@@ -22,17 +21,14 @@ router.get("/id/:name", function(req, res, next) { // get team id associated wit
 });
 
 router.get("/", function(req, res, next) { // get all teams associated with user id
-    let user_id = req.session.id;
-    if(user_id == undefined) {
-        next(createError(HTTPStatus.UNAUTHORIZED, "No User ID found"));
-    }
-    let teamUserQuery = `SELECT "teamId" FROM "teamUsers" WHERE "userId" = :uid`;
+    const user_id = req.session.id;
+    const teamUserQuery = `SELECT "teamId" FROM "teamUsers" WHERE "userId" = :uid`;
     sequelize.query(teamUserQuery, {replacements: {uid: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         if(response.length > 0) {
-            let teamIds = response.map(function(t) {
+            const teamIds = response.map(function(t) {
                 return t.teamId;
             });
-            let teamQuery = `SELECT * FROM "teams" WHERE "id" IN (${teamIds.join(", ")})`
+            const teamQuery = `SELECT * FROM "teams" WHERE "id" IN (${teamIds.join(", ")})`
             sequelize.query(teamQuery, {type: sequelize.QueryTypes.SELECT}).then(function(response) {
                 res.json(response);
             }).catch(function(thrown) {
@@ -48,16 +44,16 @@ router.get("/", function(req, res, next) { // get all teams associated with user
 });
 
 router.post("/", function(req, res, next) {
-    let team_name = req.body.name;
-    let user_id = req.session.id;
-    if(team_name == undefined || user_id == undefined || team_name.trim() == "") {
+    const team_name = req.body.name;
+    const user_id = req.session.id;
+    if(team_name === undefined || user_id === undefined || team_name.trim() === "") {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid team name or user id"));
     }
     else {
-        let query = `INSERT INTO "teams" VALUES (DEFAULT, :ownerid, :name) RETURNING *`
+        const query = `INSERT INTO "teams" VALUES (DEFAULT, :ownerid, :name) RETURNING *`
         sequelize.query(query, {replacements: {ownerid: user_id, name: team_name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response){
-            let created_team = response[0][0];
-            let query2 = `INSERT INTO "teamUsers" VALUES (:teamid, :userid)`;
+            const created_team = response[0][0];
+            const query2 = `INSERT INTO "teamUsers" VALUES (:teamid, :userid)`;
             sequelize.query(query2, {replacements: {teamid: created_team.id, userid: user_id}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
                 res.json(created_team);
             }).catch(function(thrown) {

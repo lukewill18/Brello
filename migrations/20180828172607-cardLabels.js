@@ -15,7 +15,12 @@ module.exports = {
           model: "cards",
           key: "id"
         },
-        onDelete: "cascade" }
+        onDelete: "cascade" },
+        
+      addedAt: {
+        type: Sequelize.DATE,
+        allowNull: false
+      }
     });
   },
 

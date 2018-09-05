@@ -182,7 +182,7 @@ $(function() {
    
 
     function openBoard(board_id) {
-        window.location.pathname = "lists/" + board_id;
+        window.location.pathname = "boards/" + board_id;
        // renderLists(board);
     }
 

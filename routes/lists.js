@@ -10,46 +10,24 @@ var router = express.Router();
 
 function verifyAccess(req, res, next) {
     const user_id = req.session.id;
-    const boardId = req.params.id;
-    const query = `SELECT DISTINCT "b"."id" FROM "boards" b
-                        INNER JOIN "users" u ON "u"."id" = "b"."ownerId"
-                        LEFT JOIN "teamUsers" tu ON "b"."teamId" = "tu"."teamId"
-                        WHERE (:id = "b"."ownerId" OR :id = "tu"."userId") AND ("b"."id" = :boardId);`;
-    sequelize.query(query, {replacements: {id: user_id, boardId: boardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+    const listId = req.params.id;
+    const query = `SELECT DISTINCT "l"."id" FROM "lists" "l"
+                        INNER JOIN "boards" "b" ON "b"."id" = "l"."boardId"
+                        INNER JOIN "users" "u" ON "b"."ownerId" = "u"."id"
+                        LEFT JOIN "teamUsers" "tu" ON "b"."teamId" = "tu"."teamId"
+                        WHERE (:id = "b"."ownerId" OR :id = "tu"."userId") AND ("l"."id" = :listId);`;
+    sequelize.query(query, {replacements: {id: user_id, listId: listId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         if(response.length === 0)
-            next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this board"));
+            next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this list"));
         else   
             next();
     }).catch(function(thrown) {
-        next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this board"));
+        next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this list"));
     });
 }
 
 router.get("/", function(req, res, next) {
     res.redirect("/boards");
-});
-
-router.get("/:id", verifyAccess, function(req, res, next) {
-    const user_id = req.session.id;
-    const query = `SELECT * FROM (
-                        SELECT DISTINCT ON ("l") "l".*, json_agg(DISTINCT "c".*) cards
-                        FROM "lists" "l"
-                        LEFT JOIN "cards" c ON "l"."id" = "c"."listId"
-                        INNER JOIN "boards" b ON "b"."id" = :boardid
-                        WHERE "l"."boardId" = :boardid
-                        GROUP BY "l"."id"
-                        ) info
-                        ORDER BY "order" ASC, "createdAt" ASC;`;
-    sequelize.query(query, {replacements: {boardid: req.params.id, id: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
-        for(let i = 0; i < response.length; ++i) {
-            if(response[i].cards[0] === null) {
-                response[i].cards = [];
-            }
-        }
-        res.render("lists", {lists: response, board_id: req.params.id})
-    }).catch(function(thrown) {
-        next(createError(HTTPStatus.BAD_REQUEST, "Invalid board ID"));
-    });
 });
 
 router.post("/", function(req, res, next) {
@@ -70,20 +48,29 @@ router.post("/", function(req, res, next) {
     }
 });
 
-router.patch("/:id/order/", verifyAccess, function(req, res, next) {
-    const {listId, newOrder} = req.body;
-    if(listId === undefined || newOrder === undefined || listId.toString().trim() === "" || newOrder.toString().trim() === "")
-        next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
+router.patch("/:id/cards/", verifyAccess, function(req, res, next) {
+    const listId = req.params.id;
+    console.log(req.body);
+    const cards = req.body['cards[]'];
+    if(cards === undefined || !Array.isArray(cards))
+    {
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid card array"));
+    }
     else {
-        const query = `UPDATE "lists"
-                            SET "order" = :newOrder
-                            WHERE "id" = :listId
-                            RETURNING "order";`;
-        sequelize.query(query, {replacements: {newOrder: newOrder, listId: listId}, type: sequelize.QueryTypes.UPDATE}).then(function(response) {
-            res.json(response);
+        let promises = [];
+        for(let i = 0; i < cards.length; ++i) {
+            const query = `UPDATE "cards"
+                                SET "order" = :newOrder
+                                WHERE "id" = :cardId AND "listId" = :listId`;
+            promises.push(sequelize.query(query, {replacements: {newOrder: i, cardId: cards[i], listId: listId}, type: sequelize.QueryTypes.UPDATE}));
+        }
+        Promise.all(promises).then(function(resolves) {
+            res.json(resolves);
         }).catch(function(thrown) {
-            next(createError(HTTPStatus.BAD_REQUEST, "Invalid order or list ID"));
+            console.log(thrown);
+            next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not update card order"));
         });
+        
     }
 });
 

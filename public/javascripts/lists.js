@@ -129,12 +129,22 @@ function removeLabel(labelId, cardId) {
     });
 }
 
-function updateListOrder(boardId, listId, newOrder) {
+function updateListOrders(listContainer, listList) {
     return new Promise(function(resolve, reject) {
+        const list_arr = listContainer.find(".list");
+        const boardId = listList.attr("data-board-id");
+        let lists = [];
+        for(let i = 0; i < list_arr.length; ++i) {
+            lists.push($(list_arr[i]).attr("data-id"));
+        }
+        if(lists.length <= 1) {
+            resolve();
+            return;
+        }
         $.ajax({
-            url: "http://localhost:3000/lists/" + boardId.toString() + "/order",
+            url: "http://localhost:3000/boards/" + boardId.toString() + "/lists",
             method: "PATCH",
-            data: {listId, newOrder},
+            data: {lists},
             success: function(response) {
                 resolve(response);
             },
@@ -145,12 +155,38 @@ function updateListOrder(boardId, listId, newOrder) {
     });
 }
 
-function updateCardOrder(listId, cardId, newOrder) {
+function updateCardOrders(list, listId) {
+    return new Promise(function(resolve, reject) {
+        const card_arr = list.children(".card");
+        let cards = [];
+        for(let i = 0; i < card_arr.length; ++i) {
+            cards.push($(card_arr[i]).attr("data-id"));
+        }
+        if(cards.length <= 1) {
+            resolve();
+            return;
+        }
+        $.ajax({
+            url: "http://localhost:3000/lists/" + listId.toString() + "/cards",
+            method: "PATCH",
+            data: {cards},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                console.log(thrown);
+                reject(thrown);
+            }
+        });
+    });
+}
+
+function updateCardList(oldListId, newListId, cardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/" + cardId.toString() + "/order",
+            url: "http://localhost:3000/cards/" + cardId.toString() + "/list",
             method: "PATCH",
-            data: {listId, newOrder},
+            data: {oldListId, newListId},
             success: function(response) {
                 resolve(response);
             },
@@ -183,26 +219,15 @@ $(function() {
     const listEntry = addListTemplate.find("#list-entry");
     const closeListTemplate = addListTemplate.find("#close-list-template");
     let dragging_card = false;
-    let new_lists = 0;
     let currentCardTemplate;
     let showing_list_template = false;
     let dragging = false;
     let current_board;
-    let current_card;
     let clickX = 0;
     let updating_list_order = false;
     let updating_card_order = false;
 
     linktohome.removeClass("hidden");
-    
-    function updateCardOrders(list, listId) {
-        const cards = list.find(".card");
-        let promises = [];
-        for(let i = 0; i < cards.length; ++i) {
-            promises.push(updateCardOrder(listId, $(cards[i]).attr("data-id"), $(cards[i]).index()));
-        }
-        return Promise.all(promises);
-    }
     
     let card_drag = new Draggable.Sortable(document.querySelectorAll(".list"), {
         draggable: '.card',
@@ -222,29 +247,26 @@ $(function() {
         const old_list_id = $(e.oldContainer).attr("data-id");
         const new_list_id = $(e.newContainer).attr("data-id");
         setTimeout(function() {
-            let promises = [];
-            promises.push(updateCardOrders($(e.oldContainer), old_list_id));
-            if(old_list_id !== new_list_id) {
-                promises.push(updateCardList(old_list_id, new_list_id, /*CARD ID*/));
-                promises.push(updateCardOrders($(e.newContainer), new_list_id));
+            if(new_list_id === old_list_id) {
+                updateCardOrders($(e.oldContainer), old_list_id).then(function() {
+                    updating_card_order = false;
+                });
             }
-            Promise.all(promises).then(function() {
-                updating_card_order = false;
-            });
+            else {
+                updateCardList(old_list_id, new_list_id, $(e.newContainer).children(".card").eq(e.newIndex).attr("data-id")).then(function() {
+                    let promises = [];
+                    promises.push(updateCardOrders($(e.oldContainer), old_list_id));
+                    promises.push(updateCardOrders($(e.newContainer), new_list_id));
+                    Promise.all(promises).then(function() {
+                        updating_card_order = false;
+                    });
+                });
+            }
         }, 1);
         
     });
     
-    function updateListOrders() {
-        let promises = [];
-        const lists = listContainer.find(".list");
-        const boardId = listList.attr("data-board-id");
-        for(let i = 0; i < lists.length; ++i) {
-            let listId = $(lists[i]).attr("data-id");
-            promises.push(updateListOrder(boardId, listId, $(lists[i]).index()));
-        }
-        return Promise.all(promises);
-    }
+    
     
     new Draggable.Sortable(document.querySelectorAll("#lists-container"), {
      draggable: '.list',
@@ -257,7 +279,7 @@ $(function() {
     }).on("sortable:stop", function(e) {
         updating_list_order = true;
         setTimeout(function() {
-            updateListOrders().then(function() {
+            updateListOrders(listContainer, listList).then(function() {
                 updating_list_order = false;
             });
         }, 1);

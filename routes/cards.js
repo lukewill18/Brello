@@ -146,11 +146,11 @@ router.post("/:id/label", verifyAccess, function(req, res, next) {
                 res.status(HTTPStatus.CREATED).json(response[0][0]);
             }).catch(function(thrown) {
                 console.log(thrown);
-                next(createError(HTTPStatus.BAD_REQUEST, "label already belongs to card"));
+                next(createError(HTTPStatus.BAD_REQUEST, "Label already belongs to card"));
             });
         }).catch(function(thrown) {
             console.log(thrown);
-            next(createError(HTTPStatus.BAD_REQUEST, "label could not be created"));
+            next(createError(HTTPStatus.BAD_REQUEST, "Label could not be created"));
         });        
     }
 });
@@ -166,25 +166,24 @@ router.delete("/:id/label", verifyAccess, function(req, res, next) {
         sequelize.query(query, {replacements: {cardId: cardId, labelId: labelId}, type: sequelize.QueryTypes.DELETE}).then(function(response) {
             res.json(response);
         }).catch(function(thrown) {
-            next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "label could not be deleted"));
+            next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Label could not be deleted"));
         });
     }
 });
 
-router.patch("/:id/order", verifyAccess, function(req, res, next) {
+router.patch("/:id/list", verifyAccess, function(req, res, next) {
     const cardId = req.params.id;
-    const newOrder = req.body.newOrder;
-    if(newOrder === undefined || newOrder.toString().trim() === "")
-        next(createError(HTTPStatus.BAD_REQUEST, "Invalid new order"));
+    const {oldListId, newListId} = req.body;
+    if(oldListId === undefined || oldListId.toString().trim() === "" || newListId === undefined || newListId.toString().trim() === "")
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid list ID(s)"));
     else {
         const query = `UPDATE "cards"
-                            SET "order" = :newOrder
-                            WHERE "id" = :cardId
-                            RETURNING "order";`;
-        sequelize.query(query, {replacements: {newOrder: newOrder, cardId: cardId}, type: sequelize.QueryTypes.UPDATE}).then(function(response) {
+                            SET "listId" = :newListId
+                            WHERE "id" = :cardId AND (SELECT "boardId" FROM "lists" WHERE "id" = :newListId) = (SELECT "boardId" FROM "lists" WHERE "id" = :oldListId);`;
+        sequelize.query(query, {replacements: {newListId: newListId, oldListId: oldListId, cardId: cardId}, type: sequelize.UPDATE}).then(function(response) {
             res.json(response);
         }).catch(function(thrown) {
-            next(createError(HTTPStatus.BAD_REQUEST, "Order could not be changed"));
+            next(createError(HTTPStatus.BAD_REQUEST, "List could not be updated"));
         });
     }
 });

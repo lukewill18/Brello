@@ -8,6 +8,23 @@ var Sequelize = db.Sequelize;
 
 var router = express.Router();
 
+function verifyAccess(req, res, next) {
+    const user_id = req.session.id;
+    const boardId = req.params.id;
+    const query = `SELECT DISTINCT "b"."id" FROM "boards" b
+                        INNER JOIN "users" u ON "u"."id" = "b"."ownerId"
+                        LEFT JOIN "teamUsers" tu ON "b"."teamId" = "tu"."teamId"
+                        WHERE (:id = "b"."ownerId" OR :id = "tu"."userId") AND ("b"."id" = :boardId);`;
+    sequelize.query(query, {replacements: {id: user_id, boardId: boardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        if(response.length === 0)
+            next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this board"));
+        else   
+            next();
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.UNAUTHORIZED, "User does not have access to this board"));
+    });
+}
+
 router.get("/", function(req, res, next) {
     res.render("boards", {});
 });
@@ -91,4 +108,45 @@ router.post("/", function(req, res, next) {
     }
 });
 
+router.get("/:id", verifyAccess, function(req, res, next) {
+    const query = `SELECT "l"."id", "l"."name", json_agg("c2".*) cards
+                        FROM "lists" "l"
+                        LEFT JOIN (SELECT * FROM "cards" ORDER BY "order" ASC, "createdAt" ASC) "c2" ON "l"."id" = "c2"."listId"
+                        WHERE "l"."boardId" = :boardId
+                        GROUP BY "l"."id"
+                        ORDER BY "l"."order" ASC, "l"."createdAt" ASC;`;
+    sequelize.query(query, {replacements: {boardId: req.params.id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        for(let i = 0; i < response.length; ++i) {
+            if(response[i].cards[0] === null) {
+                response[i].cards = [];
+            }
+        }
+        res.render("lists", {lists: response, board_id: req.params.id})
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid board ID"));
+    });
+});
+
+router.patch("/:id/lists/", verifyAccess, function(req, res, next) {
+    const lists = req.body['lists[]'];
+    const boardId = req.params.id;
+    if(lists === undefined || !Array.isArray(lists)) {
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid list array"));
+    }
+    else {
+        let promises = [];
+        for(let i = 0; i < lists.length; ++i) {
+            const query = `UPDATE "lists"
+                                SET "order" = :newOrder
+                                WHERE "id" = :listId AND "boardId" = :boardId;`;
+            promises.push(sequelize.query(query, {replacements: {newOrder: i, listId: lists[i], boardId: boardId}, type: sequelize.QueryTypes.UPDATE}));
+        }
+        Promise.all(promises).then(function(response) {
+            res.json(response);
+        }).catch(function(thrown) {
+            console.log(thrown);
+            next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; unable to update list order"));
+        });   
+    }
+});
 module.exports = router;

@@ -129,6 +129,38 @@ function removeLabel(labelId, cardId) {
     });
 }
 
+function updateListOrder(boardId, listId, newOrder) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/lists/" + boardId.toString() + "/order",
+            method: "PATCH",
+            data: {listId, newOrder},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
+function updateCardOrder(listId, cardId, newOrder) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/cards/" + cardId.toString() + "/order",
+            method: "PATCH",
+            data: {listId, newOrder},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
 $(function() {
     const linktohome = $("#linktohome");
     const listPage = $("#list-page")
@@ -158,59 +190,77 @@ $(function() {
     let current_board;
     let current_card;
     let clickX = 0;
-    
+    let updating_list_order = false;
+    let updating_card_order = false;
+
     linktohome.removeClass("hidden");
+    
+    function updateCardOrders(list, listId) {
+        const cards = list.find(".card");
+        let promises = [];
+        for(let i = 0; i < cards.length; ++i) {
+            promises.push(updateCardOrder(listId, $(cards[i]).attr("data-id"), $(cards[i]).index()));
+        }
+        return Promise.all(promises);
+    }
     
     let card_drag = new Draggable.Sortable(document.querySelectorAll(".list"), {
         draggable: '.card',
         mirror: {constrainDimensions: true}
         });
-    card_drag.on("drag:start", function() {
-        dragging_card = true;
+    card_drag.on("drag:start", function(e) {
+        if(updating_card_order)
+            e.cancel();
+        else
+            dragging_card = true;
     });
     card_drag.on("drag:stop", function(e) {
-        //update cards array
         dragging_card = false;
     });
     card_drag.on("sortable:stop", function(e) {
-        let old_list_name = $(e.oldContainer).data("name");
-        let new_list_name = $(e.newContainer).data("name");
-        let old_list = current_board.lists.find(function(l) {
-            return l.name == old_list_name;
-        });
-        if(old_list_name == new_list_name) { // compare id instead when using backend
-            swap(old_list.cards, e.newIndex, e.oldIndex);
-        }
-        else {
-            let new_list = current_board.lists.find(function(l) {
-                return l.name == new_list_name;
+        updating_card_order = true;
+        const old_list_id = $(e.oldContainer).attr("data-id");
+        const new_list_id = $(e.newContainer).attr("data-id");
+        setTimeout(function() {
+            let promises = [];
+            promises.push(updateCardOrders($(e.oldContainer), old_list_id));
+            if(old_list_id !== new_list_id) {
+                promises.push(updateCardList(old_list_id, new_list_id, /*CARD ID*/));
+                promises.push(updateCardOrders($(e.newContainer), new_list_id));
+            }
+            Promise.all(promises).then(function() {
+                updating_card_order = false;
             });
-            new_list.cards.splice(e.newIndex, 0, old_list.cards[e.oldIndex]);
-            old_list.cards.splice(e.oldIndex, 1);
-        }
+        }, 1);
+        
     });
+    
+    function updateListOrders() {
+        let promises = [];
+        const lists = listContainer.find(".list");
+        const boardId = listList.attr("data-board-id");
+        for(let i = 0; i < lists.length; ++i) {
+            let listId = $(lists[i]).attr("data-id");
+            promises.push(updateListOrder(boardId, listId, $(lists[i]).index()));
+        }
+        return Promise.all(promises);
+    }
     
     new Draggable.Sortable(document.querySelectorAll("#lists-container"), {
      draggable: '.list',
      handle: ".list-title",
      mirror: {constrainDimensions: true}
     }).on("drag:start", function(event) {
-        if(dragging_card) {
+        if(dragging_card || updating_list_order) {
             event.cancel();
         }
     }).on("sortable:stop", function(e) {
-        /*console.log(current_board.lists);
-        let old_list = current_board.lists[e.oldIndex];
-        console.log(old_list);
-        current_board.lists.splice(e.newIndex, 0, old_list);
-        let old_list_str = JSON.stringify(old_list);
-        console.log(current_board.lists);
-        for(let i = 0; i < current_board.lists.length; ++i) {
-            if(JSON.stringify(current_board.lists[i]) == old_list_str && i != e.newIndex) {
-                current_board.lists.splice(i, 1);
-            }
-        }
-        console.log(current_board.lists);*/
+        updating_list_order = true;
+        setTimeout(function() {
+            updateListOrders().then(function() {
+                updating_list_order = false;
+            });
+        }, 1);
     });
     
     function hideCardTemplate() {

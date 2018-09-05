@@ -29,7 +29,10 @@ module.exports = {
       },
       order: {
         type: Sequelize.INTEGER,
-        autoIncrement: true,
+        allowNull: true
+      },
+      createdAt: {
+        type: Sequelize.DATE,
         allowNull: false
       },
       name: {

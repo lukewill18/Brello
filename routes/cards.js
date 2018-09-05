@@ -37,18 +37,6 @@ router.get("/:id", verifyAccess, function(req, res, next) {
         labels: []
     }
     const err_invalid = createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not find card");
-    /*const query = `SELECT DISTINCT ON ("c") "c"."id", "c"."description", json_agg(DISTINCT "lab".*) "labels",
-                    json_agg(DISTINCT jsonb_build_object('id', "com"."id", 'userFirst', "u"."firstName", 'userLast', "u"."lastName", 'date', "com"."datetime", 'body', "com"."body")) "comments"
-                    FROM "cards" c
-                    INNER JOIN "lists" l ON "l"."id" = "c"."listId"
-                    INNER JOIN "boards" b ON "l"."boardId" = "b"."id"
-                    LEFT JOIN "teamUsers" tu ON "tu"."teamId" = "b"."teamId"
-                    LEFT JOIN "cardLabels" cl ON "c"."id" = "cl"."cardId"
-                    LEFT JOIN "labels" lab ON "lab"."id" = "cl"."labelId"
-                    LEFT JOIN "comments" com ON "com"."cardId" = "c"."id"
-                    LEFT JOIN "users" "u" ON "u"."id" = "com"."userId"
-                    WHERE "c"."id" = :cardId AND ("tu"."userId" = :id OR "b"."ownerId" = :id)
-                    GROUP BY "c"."id";`;*/
     const q1 = `SELECT "id", "description" FROM "cards"
                 WHERE "id" = :cardId;`;
 
@@ -92,7 +80,7 @@ router.post("/", function(req, res, next) {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid name or list ID"));
     }
     else {
-        let query = `INSERT INTO "cards" VALUES (DEFAULT, :id, :listid, 0, :date, :name, '') RETURNING "id", "name";`;
+        let query = `INSERT INTO "cards" VALUES (DEFAULT, :id, :listid, NULL, :date, :name, '') RETURNING "id", "name";`;
         sequelize.query(query, {replacements: {id: user_id, listid: listId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), name: name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
             res.status(HTTPStatus.CREATED).json(response[0][0]);
         }).catch(function(thrown) {
@@ -179,6 +167,24 @@ router.delete("/:id/label", verifyAccess, function(req, res, next) {
             res.json(response);
         }).catch(function(thrown) {
             next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "label could not be deleted"));
+        });
+    }
+});
+
+router.patch("/:id/order", verifyAccess, function(req, res, next) {
+    const cardId = req.params.id;
+    const newOrder = req.body.newOrder;
+    if(newOrder === undefined || newOrder.toString().trim() === "")
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid new order"));
+    else {
+        const query = `UPDATE "cards"
+                            SET "order" = :newOrder
+                            WHERE "id" = :cardId
+                            RETURNING "order";`;
+        sequelize.query(query, {replacements: {newOrder: newOrder, cardId: cardId}, type: sequelize.QueryTypes.UPDATE}).then(function(response) {
+            res.json(response);
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.BAD_REQUEST, "Order could not be changed"));
         });
     }
 });

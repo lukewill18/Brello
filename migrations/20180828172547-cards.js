@@ -30,7 +30,7 @@ module.exports = {
       },
       order: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: true
       },
       createdAt: {
         type: Sequelize.DATE,

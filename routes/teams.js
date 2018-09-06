@@ -20,6 +20,58 @@ router.get("/id/:name", function(req, res, next) { // get team id associated wit
     }
 });
 
+router.get("/:id/users", function(req, res, next) {
+    const teamId = req.params.id;
+    const user_id = req.session.id;
+    const query = `SELECT "u"."id", concat("u"."firstName", ' ', "u"."lastName") AS name
+                        FROM "teamUsers" "tu"
+                        INNER JOIN "users" "u" ON "u"."id" = "tu"."userId"
+                        WHERE "tu"."teamId" = :teamId
+                        AND EXISTS (SELECT "userId" FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :userId);`;
+    sequelize.query(query, {replacements: {teamId: teamId, userId: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        res.json(response);
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.BAD_REQUEST, "Could not find users; invalid input or you do not belong to the specified team"));
+    });
+});
+
+router.patch("/:id/users", function(req, res, next) {
+    const teamId = req.params.id;
+    const userToAdd = req.body.userId;
+    const user_id = req.session.id;
+    if(userToAdd === undefined || userToAdd.toString().trim() === "") 
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid user Id"));
+    else {
+        const checkAccess = `SELECT "userId" FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :userId;`;
+        sequelize.query(checkAccess, {replacements: {teamId: teamId, userId: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+            if(response.length > 0) {
+                const q1 = `SELECT "id", concat("firstName", ' ', "lastName") "name"
+                                    FROM "users"
+                                    WHERE "id" = :userToAdd;`;
+                sequelize.query(q1, {replacements: {userToAdd: userToAdd}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+                    const q2 = `INSERT INTO "teamUsers"
+                                    VALUES (:teamId, :userToAdd);`;
+                    const q1_response = response;
+                    sequelize.query(q2, {replacements: {teamId: teamId, userToAdd: userToAdd}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+                        res.json(q1_response[0]);   
+                    }).catch(function(thrown) {
+                        next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not insert this user into table"));
+                    });                             
+                }).catch(function(thrown) {
+                    next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; no user found with such id"));
+                });      
+           }
+            else {
+                next(createError(HTTPStatus.UNAUTHORIZED, "User not allowed to access this team"));
+            }
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not access team"));
+        });
+
+        
+    }
+});
+
 router.get("/", function(req, res, next) { // get all teams associated with user id
     const user_id = req.session.id;
     const teamUserQuery = `SELECT "teamId" FROM "teamUsers" WHERE "userId" = :uid`;

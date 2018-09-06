@@ -226,6 +226,7 @@ $(function() {
     let clickX = 0;
     let updating_list_order = false;
     let updating_card_order = false;
+    let label_container_height = 68;
 
     linktohome.removeClass("hidden");
     
@@ -265,8 +266,6 @@ $(function() {
         }, 1);
         
     });
-    
-    
     
     new Draggable.Sortable(document.querySelectorAll("#lists-container"), {
      draggable: '.list',
@@ -396,6 +395,15 @@ $(function() {
             $(this).val("");
     });
     
+    function resizeModal() {
+        let diff = labelContainer.height() - label_container_height;
+        if(diff != 0) {
+            cardModal.height(cardModal.height() + diff);
+            label_container_height = labelContainer.height();
+        }
+            
+    }
+
     function showCardModalDesc(desc) {
         if(desc != "") {
             cardModalDesc.text(desc);
@@ -419,10 +427,10 @@ $(function() {
             temp += `<div class="label" data-id=${labels[i].id}><span class="labelname">${labels[i].name}</span>&ensp;<i class="fas fa-times remove-label"></i></div>`;
         }
         $(temp).insertBefore(labelEntry);
+        resizeModal();
     }
     
     function showCardModalComments(comments) {
-        cardModal.height(665);
         commentList.find(".modal-comment-info").remove();
         cardModalCommentEntry.val("");
         let temp = ``;
@@ -440,6 +448,7 @@ $(function() {
             cardModal.attr("data-id", cardId);
             cardModalName.text(cardname);
             cardModalList.text(listname);
+            cardModal.height(665);
             showCardModalDesc(cardInfo.description);    
             showCardModalLabels(cardInfo.labels);
             showCardModalComments(cardInfo.comments);
@@ -449,6 +458,7 @@ $(function() {
     
     function hideCardModal() {
         cardModalContainer.addClass("hidden");
+        label_container_height = 68;
     }
     
     listList.on("click", ".card", function() {
@@ -503,6 +513,7 @@ $(function() {
                 createLabel(label, cardModal.attr("data-id")).then(function(resolve) {
                     $(`<div class="label" data-id=${resolve.labelId}><span class="labelname">${label}</span>&ensp;<i class="fas fa-times remove-label"></i></div>`).insertBefore(labelEntry);
                     labelEntry.text("");
+                    resizeModal();
                 }).catch(function(thrown) {
                     console.log(thrown);
                 });
@@ -513,6 +524,7 @@ $(function() {
             if(last.length > 0) {
                 removeLabel(last.attr("data-id"), cardModal.attr("data-id")).then(function(resolve) {
                     last.remove();
+                    resizeModal();
                 });
             }
         }
@@ -528,6 +540,10 @@ $(function() {
         });
     });
     
+    labelContainer.on("resize", function(e) {
+        console.log(e); 
+    });
+
     function generateComment(comment) {
         return `<li class="modal-comment-info" data-id=${comment.id}>
                     <div class="user-icon modal-user-icon"></div>

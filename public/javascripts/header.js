@@ -7,6 +7,7 @@ $(function() {
     const searchbar = $("#searchbar");
     const searchIcon = $("#search-icon");
     const matchList = $("#match-list");
+    const userIcon = $("#header-user-icon");
 
     $("body").click(function(e) {
         if(!$(e.target).is(notificationsPopup) && !$(e.target).is(notificationsBtn)) {
@@ -27,5 +28,9 @@ $(function() {
     siteTitle.click(function() {
         window.location.pathname = "boards";
     });
+    userIcon.click(function() {
+        window.location.pathname = "";
+    });
+    
 });
 

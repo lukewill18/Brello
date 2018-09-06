@@ -49,4 +49,23 @@ router.post("/login/", function(req, res, next) {
   }
 });
 
+router.get("/search/", function(req, res, next) {
+  const name = req.query.name;
+  const exclude = req.query.exclude;
+  if(name === undefined)
+    next(createError(HTTPStatus.BAD_REQUEST, "Invalid name"));
+  else {
+    if(exclude === undefined)
+      exclude = -1;
+    const query = `SELECT "id", concat("firstName", ' ', "lastName") AS name FROM "users"
+                      WHERE concat("firstName", ' ', "lastName") LIKE concat('%', :name, '%') AND "id" NOT IN (:exclude);`;
+    sequelize.query(query, {replacements: {name: name, exclude: exclude}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+      res.json(response);
+    }).catch(function(thrown) {
+      next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not search"));
+    });
+  }
+
+});
+
 module.exports = router;

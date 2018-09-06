@@ -109,19 +109,27 @@ router.post("/", function(req, res, next) {
 });
 
 router.get("/:id", verifyAccess, function(req, res, next) {
-    const query = `SELECT "l"."id", "l"."name", json_agg("c2".*) cards
+    const boardId = req.params.id;
+    const q1 = `SELECT "l"."id", "l"."name", json_agg("c2".*) cards
                         FROM "lists" "l"
                         LEFT JOIN (SELECT * FROM "cards" ORDER BY "order" ASC, "createdAt" ASC) "c2" ON "l"."id" = "c2"."listId"
                         WHERE "l"."boardId" = :boardId
                         GROUP BY "l"."id"
                         ORDER BY "l"."order" ASC, "l"."createdAt" ASC;`;
-    sequelize.query(query, {replacements: {boardId: req.params.id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+    const q2 = `UPDATE "boards"
+                    SET "lastViewed" = :date
+                    WHERE "id" = :boardId;`
+    sequelize.query(q1, {replacements: {boardId: boardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         for(let i = 0; i < response.length; ++i) {
             if(response[i].cards[0] === null) {
                 response[i].cards = [];
             }
         }
-        res.render("lists", {lists: response, board_id: req.params.id})
+        sequelize.query(q2, {replacements: {date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), boardId: boardId}, type: sequelize.QueryTypes.UPDATE}).then(function(q2_response) {
+            res.render("lists", {lists: response, board_id: req.params.id});
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.BAD_REQUEST, "Invalid board ID"));
+        });
     }).catch(function(thrown) {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid board ID"));
     });

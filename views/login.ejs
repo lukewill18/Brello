@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
     <link rel="stylesheet" href="/stylesheets/bootstrap.css">
     <link rel="stylesheet" href="/stylesheets/style.css">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
   </head>
   <body>
     <div id="alert" class="alert alert-danger"></div>
@@ -21,21 +22,24 @@
     <div id="notifications-popup" class="hidden">
     </div>
     <div id="login-page" class="shown">
+        <div id="site-header-container">
+            <img src="https://cdn.shopify.com/s/files/1/0185/5092/products/symbols-0107_800x.png?v=1369543753"><h1>rello</h1> <br>
+        </div>
         <div id="login-area">
-            <h1>Login</h1>
+            <h2>Login</h2>
             <form id="login-form">
-                <label>Email: </label><input id="login-email-entry" type="text"> <br>
-                <label>Password: </label><input id="login-password-entry" type="password"><br>
+                <h4>Email: </h4><input id="login-email-entry" type="text"> <br>
+                <h4>Password: </h4><input id="login-password-entry" type="password"><br>
                 <button class="btn" id="login-btn">Login</button>
             </form>
         </div>
-        <div class="solid-line"></div>
         <div id="register-area">
-            <h1>Register</h1>
+            <h2>Register</h2>
             <form id="register-form">
-                <label>First Name: </label><input id="first-name-entry" type="text"> <label>Last Name: </label><input id="last-name-entry" type="text"> <br>
-                <label>Email: </label><input id="register-email-entry" type="text">
-                <label>Password: </label><input id="register-password-entry" type="password"><br>
+                <h4>First Name: </h4><input id="first-name-entry" type="text"> <br>
+                <h4>Last Name: </h4><input id="last-name-entry" type="text"> <br>
+                <h4>Email: </h4><input id="register-email-entry" type="text"> <br>
+                <h4>Password: </h4><input id="register-password-entry" type="password"><br>
                 <button class="btn" id="register-btn">Register</button>
             </form>
         </div>

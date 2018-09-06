@@ -1,6 +1,7 @@
 var express = require('express');
 var HTTPStatus = require("http-status");
 var createError = require("http-errors");
+var bcrypt = require("bcrypt");
 var db = require("../models/index.js");
 var sequelize = db.sequelize;
 
@@ -8,42 +9,51 @@ var router = express.Router();
 
 router.post('/register/', function(req, res, next) {  
   const {first_name, last_name, email, password} = req.body;
-  if(first_name.trim() === "" || last_name.trim() === "" || email.trim() === "" || password.trim() === "")
+  if(first_name.trim() === "" || last_name.trim() === "" || email.trim() === "" || password === "")
     next(createError(HTTPStatus.BAD_REQUEST, "One or more fields left blank"));
   else {
-    sequelize.query(`INSERT INTO "users" VALUES (DEFAULT, :first, :last, :pass, :email) RETURNING id`, 
-        {replacements: {first: first_name.trim(), last: last_name.trim(), pass: password.trim(), email: email.trim()}}).then(function(response) {
-            req.session.id = response[0][0].id;
-            res.status(HTTPStatus.CREATED).json(response[0][0]);
-            //res.render("../views/boards", {});
-          }).catch(function(err) {
-            let error = err;
-            switch (err.name) {
-              case 'SequelizeUniqueConstraintError': {
-                error = createError(HTTPStatus.CONFLICT, "Email already registered");
-              }
-              default:
-                break;
+    bcrypt.hash(password, 10, function(err, hash) {
+      sequelize.query(`INSERT INTO "users" VALUES (DEFAULT, :first, :last, :pass, :email) RETURNING id`, 
+      {replacements: {first: first_name.trim(), last: last_name.trim(), pass: hash, email: email.trim()}}).then(function(response) {
+          req.session.id = response[0][0].id;
+          res.status(HTTPStatus.CREATED).json(response[0][0]);
+          //res.render("../views/boards", {});
+        }).catch(function(err) {
+          let error = err;
+          switch (err.name) {
+            case 'SequelizeUniqueConstraintError': {
+              error = createError(HTTPStatus.CONFLICT, "Email already registered");
             }
-              next(error);
-          });
+            default:
+              break;
+          }
+            next(error);
+        });
+    });
+    
   }
 });
 
 router.post("/login/", function(req, res, next) {
   const {email, password} = req.body;
-  if(email.trim() === "" || password.trim() === "")
+  if(email.trim() === "" || password === "")
     next(createError(HTTPStatus.BAD_REQUEST, "One or more fields left blank"));
   else {
-    sequelize.query(`SELECT "id" FROM "users" WHERE "email" = :email AND "password" = :password`, 
-    {replacements: {email: email.trim(), password: password.trim()}}).then(function(response) {
-      if(response[0].length > 0) {
-        req.session.id = response[0][0].id;
-        res.json(response[0][0]);
-        //res.render("../views/boards", {});
+    sequelize.query(`SELECT "id", "password" FROM "users" WHERE "email" = :email`, 
+    {replacements: {email: email.trim()}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+      if(response.length === 0) {
+        next(createError(HTTPStatus.BAD_REQUEST, "No account found with given email"));
       }
       else {
-        next(createError(HTTPStatus.UNAUTHORIZED, "Email and password do not match"));
+        bcrypt.compare(password, response[0].password, function(err, crypt_res) {
+          if(crypt_res) {
+            req.session.id = response[0].id;
+            res.json({id: response[0].id});
+          }
+          else {
+            next(createError(HTTPStatus.UNAUTHORIZED, "Email and password do not match"));
+          }
+        });
       }
     });
   }

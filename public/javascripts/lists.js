@@ -17,6 +17,7 @@ function addList(listname, boardId) {
 function generateList(listname, list_id, cards) {
     let temp = `<div class="list" id="new-list-${list_id}" data-id=${list_id}>
                     <h6 class="list-title draggable">${listname}</h6>
+                    <input class="list-title-input hidden" type="text">
                     <div class="add-card">+ Add a card</div>
                     <div class="add-card-template hidden">
                         <textarea class="card-entry" rows="4" cols="50" placeholder="Enter a title for this card..."></textarea>
@@ -180,6 +181,22 @@ function updateCardList(oldListId, newListId, cardId) {
             url: "http://localhost:3000/cards/" + cardId.toString() + "/list",
             method: "PATCH",
             data: {oldListId, newListId},
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
+function updateListName(listId, listName) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/lists/" + listId.toString(),
+            method: "PATCH",
+            data: {name: listName},
             success: function(response) {
                 resolve(response);
             },
@@ -370,6 +387,36 @@ $(function() {
         }
     }
     
+    listContainer.on("click", ".list-title", function() {
+        $(this).addClass("hidden");
+        $(this).siblings(".list-title-input").removeClass("hidden");
+        $(this).siblings(".list-title-input").focus();
+    });
+
+    function hideListInput(listInput) {
+        listInput.val("");
+        listInput.addClass("hidden");
+        listInput.siblings(".list-title").removeClass("hidden");
+    }
+
+    listContainer.on("keydown", ".list-title-input", function(e) {
+        const input = $(this);
+        if(e.keyCode === 27) {
+            hideListInput(input);
+        }
+        else if(e.keyCode === 13) {
+            if(input.val().trim() === "") {
+                hideListInput(input);
+            }
+            else {
+                updateListName(input.parent().attr("data-id"), input.val().trim()).then(function(response) {
+                    input.siblings(".list-title").text(response.name);
+                    hideListInput(input);
+                });
+            }
+        }
+    });
+
     listContainer.on("click", ".add-card-btn", function() {
         submitCardForm($(this).siblings(".card-entry").val());
     });
@@ -449,7 +496,9 @@ $(function() {
     }
 
     function checkHash() {
-        if(window.location.hash.length > 1 && listContainer.find(`.card[data-id=${window.location.hash.slice(1)}]`).length > 0) { // verify card is actually on this page
+        if(window.location.hash === "")
+            hideCardModal();
+        else if(window.location.hash.length > 1 && listContainer.find(`.card[data-id=${window.location.hash.slice(1)}]`).length > 0) { // verify card is actually on this page
             showCardModal(window.location.hash.slice(1));
         }
     }
@@ -457,7 +506,6 @@ $(function() {
     function hideCardModal() {
         cardModalContainer.addClass("hidden");
         label_container_height = 68;
-        window.location.hash = "";
     }
     
     listList.on("click", ".card", function() {
@@ -467,11 +515,13 @@ $(function() {
     
     cardModalContainer.click(function(e) {
         if(e.target.id == "card-modal-container") {
-            hideCardModal();
+            window.location.hash = "";
         }
     });
     
-    cardModal.find("#close-card-modal").click(hideCardModal);
+    cardModal.find("#close-card-modal").click(function() {
+        window.location.hash = "";
+    });
     
     cardModalDescEntry.keydown(function() {
         if($(this).val() != "") {
@@ -567,8 +617,11 @@ $(function() {
                 cardModalCommentEntry.val("");
                 cardModalSaveCommentBtn.removeClass("btn-ready");
             });
-            
         }
+    });
+
+    cardModalList.click(function() {
+        window.location.hash = "";
     });
 
     $(window).bind("hashchange", checkHash);

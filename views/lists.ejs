@@ -58,6 +58,7 @@
                     <% lists.forEach(function(list) { %>
                          <div class="list" data-id=<%=list.id%>> 
                               <h6 class="list-title draggable"><%=list.name%></h6>
+                              <input class="list-title-input hidden" type="text">
                             <% list.cards.forEach(function(card) { %>
                                     <div class="card draggable" data-id=<%=card.id%>><%=card.name%></div>
                             <% }); %> 

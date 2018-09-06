@@ -39,18 +39,35 @@ router.post("/", function(req, res, next) {
         const query = `INSERT INTO "lists"
                             VALUES (DEFAULT, :id, :boardid, NULL, :date, :listname)
                             RETURNING *`;
-        sequelize.query(query, {replacements: {id: user_id, boardid: boardId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), listname: listname}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+        sequelize.query(query, {replacements: {id: user_id, boardid: boardId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), listname: listname}, 
+                        type: sequelize.QueryTypes.INSERT}).then(function(response) {
             res.json(response[0][0]);
         }).catch(function(thrown) {
-            console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
+        });
+    }
+});
+
+router.patch("/:id/", verifyAccess, function(req, res, next) {
+    const listId = req.params.id;
+    const newName = req.body.name;
+    if(newName === undefined || newName.trim() === "")
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid new name"));
+    else {
+        const query = `UPDATE "lists"
+                            SET "name" = :newName
+                            WHERE "id" = :id
+                            RETURNING "name";`;
+        sequelize.query(query, {replacements: {newName: newName.trim(), id: listId}, type: sequelize.QueryTypes.UPDATE}).then(function(response) {
+            res.json(response[0][0]);
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.BAD_REQUEST, "Could not update list with given name"));
         });
     }
 });
 
 router.patch("/:id/cards/", verifyAccess, function(req, res, next) {
     const listId = req.params.id;
-    console.log(req.body);
     const cards = req.body['cards[]'];
     if(cards === undefined || !Array.isArray(cards))
     {
@@ -67,7 +84,6 @@ router.patch("/:id/cards/", verifyAccess, function(req, res, next) {
         Promise.all(promises).then(function(resolves) {
             res.json(resolves);
         }).catch(function(thrown) {
-            console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not update card order"));
         });
         

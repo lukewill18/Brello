@@ -46,6 +46,22 @@ router.get("/all", function(req, res, next) {
     });
 });
 
+router.get("/recent", function(req, res, next) {
+    const uid = req.session.id;
+    const query = `SELECT DISTINCT "b"."id", "b"."title", "b"."lastViewed" FROM "boards" "b"
+                        LEFT JOIN "teams" "t" ON "t"."id" = "b"."teamId"
+                        LEFT JOIN "teamUsers" "tu" ON "tu"."teamId" = "t"."id"
+                        WHERE "b"."ownerId" = :id OR "tu"."userId" = :id
+                        ORDER BY "b"."lastViewed" DESC
+                        LIMIT 4;`;
+    sequelize.query(query, {replacements: {id: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        res.json(response);
+    }).catch(function(thrown) {
+        console.log(thrown);
+        next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Could not retrieve recent boards"));
+    });
+});
+
 router.get("/personal", function(req, res, next) {
     const uid = req.session.id;
     sequelize.query(`SELECT * FROM boards WHERE "ownerId" = :id`, {replacements: {id: uid}}).then(function(response) {

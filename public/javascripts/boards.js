@@ -56,8 +56,21 @@ function getAllBoards(personalBoards, teamBoards, boardTeamEntry) {
                 resolve([]);
             }  
         });
-    });
-    
+    });    
+}
+
+function getRecentBoards() {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/boards/recent",
+            success: function(response) {
+               resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }  
+        });
+    });    
 }
 
 function createTeam(name) {
@@ -180,7 +193,6 @@ $(function() {
     const createTeamText = createTeamBtn.find("p");
     const createTeamPopup = boardPage.find("#create-new-team-popup");
     const createTeamName = createTeamPopup.find("#new-team-name");
-    const createTeamDesc = createTeamPopup.find("#new-team-desc");
     const addTeamMemberModalContainer = boardPage.find("#add-team-member-modal-container");
     const addTeamMemberModal = addTeamMemberModalContainer.find("#add-team-member-modal");    
     const teamMemberInput = addTeamMemberModal.find("#team-member-input");
@@ -193,19 +205,17 @@ $(function() {
     const boardTitleEntry = addBoardModal.find("#board-title-entry");
     const boardTeamEntry = addBoardModal.find("#team-dropdown");
     const finishTeamCreationBtn = createTeamPopup.find("#create-new-team-btn");
-    let boards = [];
     let current_team_members = [];
 
     window.location.hash = "";
 
     getAllBoards(personalBoards, teamBoards, boardTeamEntry).then(function(resolve) {
-        boards = resolve;
         linktohome.addClass("hidden");
         recentBoards.find(".board-item").remove();
-        displayMostRecentBoards();
+        return getRecentBoards();
+    }).then(function(resolve) {
+        displayMostRecentBoards(resolve);
     });
-    //header.removeClass("hidden");
-   
 
     function openBoard(board_id) {
         window.location.pathname = "boards/" + board_id;
@@ -218,7 +228,6 @@ $(function() {
     function hideCreateTeamPopup() {
         createTeamPopup.addClass("hidden");
         createTeamName.val("");
-        createTeamDesc.val("");
         finishTeamCreationBtn.removeClass("btn-ready");
     }
 
@@ -276,6 +285,8 @@ $(function() {
         addUserToTeam($(this).attr("data-id"), addTeamMemberModal.attr("data-id")).then(function(response) {
             teamMemberList.append(`<li class="team-member" data-id=${response.teamId}>${response.name}</li>`);
             userMatchList.find(".user-match").remove();
+            teamMemberInput.val("");
+            teamMemberInput.focus();
             current_team_members.push(response.id);
         });
     });
@@ -338,7 +349,6 @@ $(function() {
             let board_name = boardTitleEntry.val();
             let team_name = $("#team-dropdown option:selected").text();
             createBoard(board_name, team_name).then(function(created) {
-                boards.push(created);
                 let temp = `<div class="board-item board-box" data-id=${created.id}>${created.title}</div>`;
                 if(team_name.toLowerCase() == "no team") {
                     $(temp).insertBefore(personalBoards.find(".create-board-item"));
@@ -363,7 +373,6 @@ $(function() {
     finishTeamCreationBtn.click(function() {
         if(createTeamName.val() != "") {
             let team_name = createTeamName.val();
-            let team_desc = createTeamDesc.val();
             createTeam(team_name).then(function(team) {
                 let temp = $(`<div class="row team-boards-row" data-name="${team.name}" data-id=${team.id}>
                 <i class="fas fa-users"></i> <h5>${team.name}</h5> <button class="btn add-members-btn">Add members</button><br>
@@ -376,15 +385,10 @@ $(function() {
         }
     });
 
-    function displayMostRecentBoards() {
-        let copy = boards.slice(0);
-        copy.sort(function(a, b) {
-            return a.lastViewed < b.lastViewed;
-        });
-        let topFour = copy.slice(0, 4);
+    function displayMostRecentBoards(boards) {
         let temp = ``;
-        for(let i = 0; i < topFour.length; ++i) {
-            temp += `<div class="board-item board-box" data-id="${topFour[i].id}">${topFour[i].title}</div>`;
+        for(let i = 0; i < boards.length; ++i) {
+            temp += `<div class="board-item board-box" data-id="${boards[i].id}">${boards[i].title}</div>`;
         }
         recentBoards.append(temp);
     }

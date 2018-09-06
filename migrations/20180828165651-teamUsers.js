@@ -15,7 +15,13 @@ module.exports = {
           model: "users",
           key: "id"
         },
-        onDelete: "cascade" }
+        onDelete: "cascade" },
+      joinedAt: {
+        type: Sequelize.DATE,
+        allowNull: false
+      }
+    }).then(function() {
+      return queryInterface.addIndex(table, ['joinedAt'], {indexName: 'teamUserJoinedAtIndex'});
     });
   },
 

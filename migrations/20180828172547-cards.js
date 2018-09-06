@@ -44,6 +44,12 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       }
+    }).then(function() {
+      return queryInterface.addIndex(table, ['name'], {indexName: 'cardNameIndex'});
+    }).then(function() {
+      return queryInterface.addIndex(table, ['order'], {indexName: 'cardOrderIndex'});
+    }).then(function() {
+      return queryInterface.addIndex(table, ['createdAt'], {indexName: 'cardCreatedAtIndex'});
     });
   },
 

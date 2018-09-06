@@ -35,6 +35,8 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       }
+    }).then(function() {
+      return queryInterface.addIndex(table, ['datetime'], {indexName: 'commentDatetimeIndex'});
     });
   },
 

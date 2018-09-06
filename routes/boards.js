@@ -30,10 +30,11 @@ router.get("/", function(req, res, next) {
 });
 
 router.get("/all", function(req, res, next) {
-    const query = `SELECT "t"."id" "teamId", "t"."name" "teamName",  json_agg("b".*) "boards" FROM "boards" b
+    const query = `SELECT "t"."id" "teamId", "t"."name" "teamName",
+                        json_agg("b".*) "boards" FROM (SELECT * FROM "boards" ORDER BY "createdAt" ASC) "b"
                     FULL OUTER JOIN "teams" t
                         ON "b"."teamId" = "t"."id"
-                    LEFT JOIN "teamUsers" tu
+                    LEFT JOIN (SELECT * FROM "teamUsers" ORDER BY "joinedAt") tu
                         ON "t"."id" = "tu"."teamId" AND :id = "tu"."userId"
                     WHERE "tu"."userId" = :id OR "b"."ownerId" = :id
                     GROUP BY "t"."id";`;
@@ -83,8 +84,9 @@ router.post("/", function(req, res, next) {
                 if(response.length > 0 && response.find(function(obj) {
                     return obj.userId === ownerId;
                 }) != undefined) {
-                    const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :lastviewed) RETURNING *`;
-                    sequelize.query(query, {replacements: {ownerid: ownerId, teamid: teamId, title: name.trim(), lastviewed: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+                    const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :date, :date) RETURNING *`;
+                    sequelize.query(query, {replacements: {ownerid: ownerId, teamid: teamId, title: name.trim(), date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), date2: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')},
+                     type: sequelize.QueryTypes.INSERT}).then(function(response) {
                         res.json(response[0][0]);
                     }).catch(function(thrown) {
                         next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Problem inserting board"));
@@ -98,8 +100,8 @@ router.post("/", function(req, res, next) {
             });
         }
         else {
-            const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, NULL, :title, :lastviewed) RETURNING *`;
-            sequelize.query(query, {replacements: {ownerid: ownerId, title: name.trim(), lastviewed: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+            const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, NULL, :title, :date, :date) RETURNING *`;
+            sequelize.query(query, {replacements: {ownerid: ownerId, title: name.trim(), date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
                 res.json(response[0][0]);
             }).catch(function(thrown) {
                 next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Problem inserting board"));

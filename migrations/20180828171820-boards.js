@@ -32,10 +32,20 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      createdAt: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
       lastViewed: {
         type: Sequelize.DATE,
         allowNull: false
       }
+    }).then(function() {
+      return queryInterface.addIndex(table, ['title'], {indexName: 'boardTitleIndex'});
+    }).then(function() {
+      return queryInterface.addIndex(table, ['lastViewed'], {indexName: 'boardLastViewedIndex'});
+    }).then(function() {
+      return queryInterface.addIndex(table, ['createdAt'], {indexName: 'boardCreatedAtIndex'});
     });
   },
 

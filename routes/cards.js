@@ -32,13 +32,16 @@ router.get("/:id", verifyAccess, function(req, res, next) {
     const cardId = req.params.id;
     let card = {
         id: null,
+        name: null,
+        listname: null,
         description: null,
         comments: [],
         labels: []
     }
     const err_invalid = createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not find card");
-    const q1 = `SELECT "id", "description" FROM "cards"
-                WHERE "id" = :cardId;`;
+    const q1 = `SELECT "c"."id", "c"."name", "c"."description", "l"."name" "listName" FROM "cards" "c"
+                    INNER JOIN "lists" "l" ON "c"."listId" = "l"."id"
+                    WHERE "c"."id" = :cardId;`;
 
     const q2 = `SELECT "l".* FROM "labels" l
                 LEFT JOIN "cardLabels" cl ON "cl"."cardId" = :cardId
@@ -54,6 +57,8 @@ router.get("/:id", verifyAccess, function(req, res, next) {
         let relevant = response[0];
         card.id = relevant.id;
         card.description = relevant.description;
+        card.name = relevant.name;
+        card.listname = relevant.listName;
         sequelize.query(q2, {replacements: {cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
             card.labels = response;
             sequelize.query(q3, {replacements: {cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {

@@ -1,9 +1,3 @@
-function swap(arr, ind1, ind2) {
-    let copy = arr[ind1];
-    arr[ind1] = arr[ind2];
-    arr[ind2] = copy;
-}
-
 function addList(listname, boardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
@@ -174,7 +168,6 @@ function updateCardOrders(list, listId) {
                 resolve(response);
             },
             error: function(thrown) {
-                console.log(thrown);
                 reject(thrown);
             }
         });
@@ -222,13 +215,14 @@ $(function() {
     let currentCardTemplate;
     let showing_list_template = false;
     let dragging = false;
-    let current_board;
     let clickX = 0;
     let updating_list_order = false;
     let updating_card_order = false;
     let label_container_height = 68;
 
     linktohome.removeClass("hidden");
+
+    checkHash();
     
     let card_drag = new Draggable.Sortable(document.querySelectorAll(".list"), {
         draggable: '.card',
@@ -372,8 +366,7 @@ $(function() {
                 entry.val("");
                 entry.focus();
                 currentCardTemplate.parent().append(`<div class="card draggable" data-id="${created.id}">${created.name}</div>`);
-            });
-            
+            });    
         }
     }
     
@@ -441,28 +434,35 @@ $(function() {
         cardModal.height(cardModal.height() + commentList.innerHeight());
     }
     
-    function showCardModal(cardname, listname, cardId) {
+    function showCardModal(cardId) {
         getCardInfo(cardId).then(function(cardInfo) {
             cardModalContainer.removeClass("hidden");
             cardModal.find(".btn-ready").removeClass("btn-ready");
             cardModal.attr("data-id", cardId);
-            cardModalName.text(cardname);
-            cardModalList.text(listname);
+            cardModalName.text(cardInfo.name);
+            cardModalList.text(cardInfo.listname);
             cardModal.height(665);
             showCardModalDesc(cardInfo.description);    
             showCardModalLabels(cardInfo.labels);
             showCardModalComments(cardInfo.comments);
         });
-        
+    }
+
+    function checkHash() {
+        if(window.location.hash.length > 1 && listContainer.find(`.card[data-id=${window.location.hash.slice(1)}]`).length > 0) { // verify card is actually on this page
+            showCardModal(window.location.hash.slice(1));
+        }
     }
     
     function hideCardModal() {
         cardModalContainer.addClass("hidden");
         label_container_height = 68;
+        window.location.hash = "";
     }
     
     listList.on("click", ".card", function() {
-        showCardModal($(this).text(), $(this).siblings(".list-title").text(), $(this).attr("data-id"));
+        window.location.hash = "#" + $(this).attr("data-id");
+        
     });
     
     cardModalContainer.click(function(e) {
@@ -539,10 +539,6 @@ $(function() {
             label.remove();
         });
     });
-    
-    labelContainer.on("resize", function(e) {
-        console.log(e); 
-    });
 
     function generateComment(comment) {
         return `<li class="modal-comment-info" data-id=${comment.id}>
@@ -574,12 +570,7 @@ $(function() {
             
         }
     });
-    
-    function switchToListPage(current) {
-        
-        hideCardModal();
-        switchPage(current, listPage);
-        current_board.lastViewed = Date.now();
-    }
+
+    $(window).bind("hashchange", checkHash);
 });
 

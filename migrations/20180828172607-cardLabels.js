@@ -21,6 +21,8 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false
       }
+    }).then(function() {
+      return queryInterface.addIndex(table, ['addedAt'], {indexName: 'cardLabelAddedAtIndex'});
     });
   },
 

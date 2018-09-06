@@ -39,7 +39,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-
+    }).then(function() {
+      return queryInterface.addIndex(table, ['order'], {indexName: 'listOrderIndex'});
+    }).then(function() {
+      return queryInterface.addIndex(table, ['createdAt'], {indexName: 'listCreatedAtIndex'});
     });
   },
 

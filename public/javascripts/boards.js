@@ -196,31 +196,7 @@ $(function() {
     let boards = [];
     let current_team_members = [];
 
-    searchbar.keyup(function() {
-        matchList.find(".match").remove();
-        let query = $(this).val();
-        let matches = boards.filter(function(b) {
-            return b.title.includes(query);
-        });
-        if(matches.length > 0) {
-            let temp = ``;
-            for(let i = 0; i < matches.length; ++i) {
-                temp += `<div class="match" data-index=${boards.indexOf(matches[i])}>${matches[i].title}</div>`
-            }
-            matchList.append(temp);
-            matchList.removeClass("hidden");
-        }
-        else {
-            matchList.addClass("hidden");
-        }
-    });
-
-    $("body").on("click", ".match", function() {
-        openBoard(boards[$(this).attr("data-index")].id);
-        searchbar.val("");
-        searchbar.blur();
-        matchList.addClass("hidden");
-    });
+    window.location.hash = "";
 
     getAllBoards(personalBoards, teamBoards, boardTeamEntry).then(function(resolve) {
         boards = resolve;
@@ -233,7 +209,6 @@ $(function() {
 
     function openBoard(board_id) {
         window.location.pathname = "boards/" + board_id;
-       // renderLists(board);
     }
 
     boardPage.on("click", ".board-item", function() {

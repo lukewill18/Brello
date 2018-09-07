@@ -4,7 +4,6 @@ var createError = require("http-errors");
 var moment = require("moment");
 var db = require("../models/index.js");
 var sequelize = db.sequelize;
-var Sequelize = db.Sequelize;
 
 var router = express.Router();
 
@@ -75,7 +74,7 @@ router.get("/personal", function(req, res, next) {
 router.get("/team/:id", function(req, res, next) {
     const uid = req.session.id;
     const teamId = req.params.id;
-    if(teamId === undefined || teamId.trim() === "")
+    if(teamId === undefined || teamId.toString().trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid Team ID"));
     else {
         const query = `SELECT * FROM "boards" WHERE "teamId" = :teamId AND EXISTS (SELECT * FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :uid)`;
@@ -91,7 +90,7 @@ router.post("/", function(req, res, next) {
     const name = req.body.name;
     const teamId = req.body.teamId;
     const ownerId = req.session.id;
-    if(ownerId === undefined || name === undefined || name.trim() === "")
+    if(ownerId === undefined || name === undefined || name.toString().trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid input"));
     else {
         if(teamId != undefined) {
@@ -103,7 +102,7 @@ router.post("/", function(req, res, next) {
                     const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :date, :date) RETURNING *`;
                     sequelize.query(query, {replacements: {ownerid: ownerId, teamid: teamId, title: name.trim(), date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), date2: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')},
                      type: sequelize.QueryTypes.INSERT}).then(function(response) {
-                        res.json(response[0][0]);
+                        res.status(HTTPStatus.CREATED).json(response[0][0]);
                     }).catch(function(thrown) {
                         next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Problem inserting board"));
                     });
@@ -118,7 +117,7 @@ router.post("/", function(req, res, next) {
         else {
             const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, NULL, :title, :date, :date) RETURNING *`;
             sequelize.query(query, {replacements: {ownerid: ownerId, title: name.trim(), date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
-                res.json(response[0][0]);
+                res.status(HTTPStatus.CREATED).json(response[0][0]);
             }).catch(function(thrown) {
                 next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Problem inserting board"));
             });

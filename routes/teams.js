@@ -9,7 +9,7 @@ var router = express.Router();
 
 router.get("/id/:name", function(req, res, next) { // get team id associated with team name
     const name = req.params.name;
-    if(name === undefined || name.trim() === "") 
+    if(name === undefined || name.toString().trim() === "") 
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid input"));
     else {
         let q1 = `SELECT "id" FROM "teams" WHERE "name" = :name`;
@@ -90,16 +90,16 @@ router.get("/", function(req, res, next) { // get all teams associated with user
 router.post("/", function(req, res, next) {
     const team_name = req.body.name;
     const user_id = req.session.id;
-    if(team_name === undefined || user_id === undefined || team_name.trim() === "") {
+    if(team_name === undefined || user_id === undefined || team_name.toString().trim() === "") {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid team name or user id"));
     }
     else {
-        const query = `INSERT INTO "teams" VALUES (DEFAULT, :ownerid, :name) RETURNING *`
+        const query = `INSERT INTO "teams" VALUES (DEFAULT, :ownerid, :name) RETURNING *`;
         sequelize.query(query, {replacements: {ownerid: user_id, name: team_name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response){
             const created_team = response[0][0];
             const query2 = `INSERT INTO "teamUsers" VALUES (:teamid, :userid, :date)`;
             sequelize.query(query2, {replacements: {teamid: created_team.id, userid: user_id, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
-                res.json(created_team);
+                res.status(HTTPStatus.CREATED).json(created_team);
             }).catch(function(thrown) {
                 next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Team could not be created"));
             });

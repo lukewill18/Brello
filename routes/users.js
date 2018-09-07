@@ -9,10 +9,15 @@ var router = express.Router();
 
 router.post('/register/', function(req, res, next) {  
   const {first_name, last_name, email, password} = req.body;
-  if(first_name.trim() === "" || last_name.trim() === "" || email.trim() === "" || password === "")
+  if(first_name === undefined || last_name === undefined || email === undefined || password === undefined ||
+    first_name.toString().trim() === "" || last_name.toString().trim() === "" || email.toString().trim() === "" || password === "")
     next(createError(HTTPStatus.BAD_REQUEST, "One or more fields left blank"));
   else {
     bcrypt.hash(password, 10, function(err, hash) {
+      if(err) {
+        next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Error hashing password"));
+        return;
+      }
       sequelize.query(`INSERT INTO "users" VALUES (DEFAULT, :first, :last, :pass, :email) RETURNING id`, 
       {replacements: {first: first_name.trim(), last: last_name.trim(), pass: hash, email: email.trim()}}).then(function(response) {
           req.session.id = response[0][0].id;
@@ -36,7 +41,7 @@ router.post('/register/', function(req, res, next) {
 
 router.post("/login/", function(req, res, next) {
   const {email, password} = req.body;
-  if(email.trim() === "" || password === "")
+  if(email === undefined || password === undefined || email.toString().trim() === "" || password === "")
     next(createError(HTTPStatus.BAD_REQUEST, "One or more fields left blank"));
   else {
     sequelize.query(`SELECT "id", "password" FROM "users" WHERE "email" = :email`, 
@@ -46,6 +51,10 @@ router.post("/login/", function(req, res, next) {
       }
       else {
         bcrypt.compare(password, response[0].password, function(err, crypt_res) {
+          if(err) {
+            next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Error decrypting password"));
+            return;
+          }
           if(crypt_res) {
             req.session.id = response[0].id;
             res.json({id: response[0].id});

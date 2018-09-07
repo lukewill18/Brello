@@ -389,8 +389,10 @@ $(function() {
     
     listContainer.on("click", ".list-title", function() {
         $(this).addClass("hidden");
-        $(this).siblings(".list-title-input").removeClass("hidden");
-        $(this).siblings(".list-title-input").focus();
+        const input = $(this).siblings(".list-title-input");
+        input.removeClass("hidden");
+        input.val($(this).text());
+        input.select();
     });
 
     function hideListInput(listInput) {

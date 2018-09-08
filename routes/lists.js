@@ -41,7 +41,7 @@ router.post("/", function(req, res, next) {
                             RETURNING *`;
         sequelize.query(query, {replacements: {id: user_id, boardid: boardId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), listname: listname}, 
                         type: sequelize.QueryTypes.INSERT}).then(function(response) {
-            res.json(response[0][0]);
+            res.status(HTTPStatus.CREATED).json(response[0][0]);
         }).catch(function(thrown) {
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
         });
@@ -51,7 +51,7 @@ router.post("/", function(req, res, next) {
 router.patch("/:id/", verifyAccess, function(req, res, next) {
     const listId = req.params.id;
     const newName = req.body.name;
-    if(newName === undefined || newName.trim() === "")
+    if(newName === undefined || newName.toString().trim() === "")
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid new name"));
     else {
         const query = `UPDATE "lists"

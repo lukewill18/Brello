@@ -80,8 +80,6 @@ router.post("/", function(req, res, next) {
     const {name, listId} = req.body;
     const user_id = req.session.id;
     if(name === undefined || listId === undefined || name.toString().trim() === "" || listId.toString().trim() === "") {
-        console.log(name);
-        console.log(listId);
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid name or list ID"));
     }
     else {
@@ -89,7 +87,6 @@ router.post("/", function(req, res, next) {
         sequelize.query(query, {replacements: {id: user_id, listid: listId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), name: name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
             res.status(HTTPStatus.CREATED).json(response[0][0]);
         }).catch(function(thrown) {
-            console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid request; could not create card"));
         });
     }
@@ -150,11 +147,9 @@ router.post("/:id/label", verifyAccess, function(req, res, next) {
             sequelize.query(q2, {replacements: {name: name, cardId: cardId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
                 res.status(HTTPStatus.CREATED).json(response[0][0]);
             }).catch(function(thrown) {
-                console.log(thrown);
                 next(createError(HTTPStatus.BAD_REQUEST, "Label already belongs to card"));
             });
         }).catch(function(thrown) {
-            console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Label could not be created"));
         });        
     }

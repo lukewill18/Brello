@@ -8,13 +8,14 @@
         <link rel="stylesheet" href="/stylesheets/style.css">
     </head>
     <body>
+        <% const initials = userName.toUpperCase().split(" "); %>
         <div id="header">
             <i class="fas fa-home hidden" id="linktohome"></i>
             <input type="text" id="searchbar">
             <i class="fas fa-search" id="search-icon"></i>
             <h3>Brello</h3>
             <i class="fas fa-bell" id="notifications-btn"></i>
-            <div class="user-icon" id="header-user-icon"></div>
+            <div class="user-icon" id="header-user-icon"><%=initials[0][0] + initials[1][0]%></div>
         </div>
         <div id="match-area" class="hidden">
             <div id="board-matches" class="hidden">
@@ -44,7 +45,7 @@
                     </div>
                     <i class="far fa-comment"></i>
                     <h4 class="modal-small-header">Add Comment</h4><br>
-                    <div class="user-icon modal-user-icon"></div>
+                    <div class="user-icon modal-user-icon"><%=initials[0][0] + initials[1][0]%></div>
                     <textarea id="modal-comment-entry" placeholder="Write a comment..." rows="5" cols="70"></textarea><br>
                     <button class="btn" id="modal-save-comment-btn">Save</button><br>
                     <i class="fas fa-list-ul"></i>

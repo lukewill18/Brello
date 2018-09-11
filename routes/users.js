@@ -18,11 +18,11 @@ router.post('/register/', function(req, res, next) {
         next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Error hashing password"));
         return;
       }
-      sequelize.query(`INSERT INTO "users" VALUES (DEFAULT, :first, :last, :pass, :email) RETURNING id`, 
+      sequelize.query(`INSERT INTO "users" VALUES (DEFAULT, :first, :last, :pass, :email) RETURNING "id", concat("firstName", ' ', "lastName") "name"`, 
       {replacements: {first: first_name.trim(), last: last_name.trim(), pass: hash, email: email.trim()}}).then(function(response) {
           req.session.id = response[0][0].id;
+          req.session.name = response[0][0].name;
           res.status(HTTPStatus.CREATED).json(response[0][0]);
-          //res.render("../views/boards", {});
         }).catch(function(err) {
           let error = err;
           switch (err.name) {

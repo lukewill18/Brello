@@ -86,7 +86,6 @@ function checkInvitationAccess(req, res, next) { //check if user is not in team 
             next(createError(HTTPStatus.BAD_REQUST, "Invalid user or team ID"));
         });
     }
-    
 }
 
 router.post("/:id/invitation", checkInvitationAccess, function(req, res, next) {

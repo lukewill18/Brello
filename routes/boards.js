@@ -25,7 +25,7 @@ function verifyAccess(req, res, next) {
 }
 
 router.get("/", function(req, res, next) {
-    res.render("boards", {userId: req.session.id});
+    res.render("boards", {userId: req.session.id, userName: req.session.name});
 });
 
 router.get("/all", function(req, res, next) {
@@ -143,7 +143,7 @@ router.get("/:id", verifyAccess, function(req, res, next) {
             }
         }
         sequelize.query(q2, {replacements: {date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), boardId: boardId}, type: sequelize.QueryTypes.UPDATE}).then(function(q2_response) {
-            res.render("lists", {lists: response, board_id: req.params.id, userId: req.session.id});
+            res.render("lists", {lists: response, board_id: req.params.id, userId: req.session.id, userName: req.session.name});
         }).catch(function(thrown) {
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid board ID"));
         });
@@ -169,7 +169,6 @@ router.patch("/:id/lists/", verifyAccess, function(req, res, next) {
         Promise.all(promises).then(function(response) {
             res.json(response);
         }).catch(function(thrown) {
-            console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; unable to update list order"));
         });   
     }

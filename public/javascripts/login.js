@@ -32,7 +32,7 @@ function showAlert(message) {
 function registerAccount(first_name, last_name, email, password) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/users/register",
+            url: "/users/register",
             method: "POST",
             data: {first_name, last_name, email, password},
             success: function(response) {
@@ -49,7 +49,7 @@ function registerAccount(first_name, last_name, email, password) {
 function login(email, password) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/users/login",
+            url: "/users/login",
             method: "POST",
             data: {email, password},
             success: function(response) {

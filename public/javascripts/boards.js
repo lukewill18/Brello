@@ -39,7 +39,7 @@ function displayAllBoards(response, personalBoards, teamBoards, boardTeamEntry) 
 function getAllBoards(personalBoards, teamBoards, boardTeamEntry) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/boards/all",
+            url: "/boards/all",
             success: function(response) {
                 for(let i = 0; i < response.length; ++i) {
                     if(response[i].boards[0] == null)
@@ -62,7 +62,7 @@ function getAllBoards(personalBoards, teamBoards, boardTeamEntry) {
 function getRecentBoards() {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/boards/recent",
+            url: "/boards/recent",
             success: function(response) {
                resolve(response);
             },
@@ -76,7 +76,7 @@ function getRecentBoards() {
 function createTeam(name) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/",
+            url: "/teams/",
             method: "POST",
             data: {name: name},
             success: function(response) {
@@ -92,7 +92,7 @@ function createTeam(name) {
 function getTeamId(team_name) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/id/" + team_name,
+            url: "/teams/id/" + team_name,
             success: function(response) {
                 resolve(response[0].id);
             },
@@ -106,7 +106,7 @@ function getTeamId(team_name) {
 function sendCreateBoardRequest(data) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/boards/",
+            url: "/boards/",
             method: "POST",
             data: data,
             success: function(response) {
@@ -139,7 +139,7 @@ function createBoard(board_name, team_name) {
 function findUsersWithName(name, team_members) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/users/search?name=" + name.toString() + "&exclude=" + team_members.join(","),
+            url: "/users/search?name=" + name.toString() + "&exclude=" + team_members.join(","),
             success: function(response) {
                 resolve(response);
             },
@@ -153,7 +153,7 @@ function findUsersWithName(name, team_members) {
 function getTeamMembers(teamId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/" + teamId.toString() + "/users",
+            url: "/teams/" + teamId.toString() + "/users",
             success: function(response) {
                 resolve(response);
             },
@@ -167,7 +167,7 @@ function getTeamMembers(teamId) {
 function inviteUserToTeam(userId, teamId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/" + teamId.toString() + "/invitation",
+            url: "/teams/" + teamId.toString() + "/invitation",
             method: "POST",
             data: {userId},
             success: function(response) {
@@ -183,7 +183,7 @@ function inviteUserToTeam(userId, teamId) {
 function getTeamBoards(teamId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/boards/team/" + teamId.toString(),
+            url: "/boards/team/" + teamId.toString(),
             success: function(response) {
                 resolve(response);
             },

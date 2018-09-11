@@ -1,7 +1,7 @@
 function search(query) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/search?query=" + query,
+            url: "/search?query=" + query,
             success: function(response) {
                 resolve(response);
             },
@@ -15,7 +15,7 @@ function search(query) {
 function getInvitations() {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/invitations",
+            url: "/teams/invitations",
             success: function(response) {
                 resolve(response);
             },
@@ -29,7 +29,7 @@ function getInvitations() {
 function acceptInvite(teamId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/" + teamId.toString() + "/users",
+            url: "/teams/" + teamId.toString() + "/users",
             method: "PATCH",
             success: function(response) {
                 resolve(response);
@@ -44,7 +44,7 @@ function acceptInvite(teamId) {
 function declineInvite(teamId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/" + teamId.toString() + "/invitation",
+            url: "/teams/" + teamId.toString() + "/invitation",
             method: "DELETE",
             success: function(response) {
                 resolve(response);

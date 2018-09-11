@@ -1,7 +1,7 @@
 function addList(listname, boardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/lists/",
+            url: "/lists/",
             method: "POST",
             data: {listname: listname, boardId: boardId},
             success: function(response) {
@@ -33,7 +33,7 @@ function generateList(listname, list_id, cards) {
 function createCard(name, listId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/",
+            url: "/cards/",
             method: "POST",
             data: {name, listId},
             success: function(response) {
@@ -49,7 +49,7 @@ function createCard(name, listId) {
 function getCardInfo(cardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/" + cardId.toString(),
+            url: "/cards/" + cardId.toString(),
             success: function(response) {
                 resolve(response);
             },
@@ -63,7 +63,7 @@ function getCardInfo(cardId) {
 function changeDescription(description, cardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/" + cardId.toString() + "/description",
+            url: "/cards/" + cardId.toString() + "/description",
             method: "PATCH",
             data: {description},
             success: function(response) {
@@ -79,7 +79,7 @@ function changeDescription(description, cardId) {
 function createComment(comment, cardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/" + cardId.toString() + "/comment",
+            url: "/cards/" + cardId.toString() + "/comment",
             method: "POST",
             data: {comment},
             success: function(response) {
@@ -95,7 +95,7 @@ function createComment(comment, cardId) {
 function createLabel(name, cardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/" + cardId.toString() + "/label",
+            url: "/cards/" + cardId.toString() + "/label",
             method: "POST",
             data: {name},
             success: function(response) {
@@ -111,7 +111,7 @@ function createLabel(name, cardId) {
 function removeLabel(labelId, cardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/" + cardId.toString() + "/label",
+            url: "/cards/" + cardId.toString() + "/label",
             method: "DELETE",
             data: {labelId},
             success: function(response) {
@@ -137,7 +137,7 @@ function updateListOrders(listContainer, listList) {
             return;
         }
         $.ajax({
-            url: "http://localhost:3000/boards/" + boardId.toString() + "/lists",
+            url: "/boards/" + boardId.toString() + "/lists",
             method: "PATCH",
             data: {lists},
             success: function(response) {
@@ -162,7 +162,7 @@ function updateCardOrders(list, listId) {
             return;
         }
         $.ajax({
-            url: "http://localhost:3000/lists/" + listId.toString() + "/cards",
+            url: "/lists/" + listId.toString() + "/cards",
             method: "PATCH",
             data: {cards},
             success: function(response) {
@@ -178,7 +178,7 @@ function updateCardOrders(list, listId) {
 function updateCardList(oldListId, newListId, cardId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/cards/" + cardId.toString() + "/list",
+            url: "/cards/" + cardId.toString() + "/list",
             method: "PATCH",
             data: {oldListId, newListId},
             success: function(response) {
@@ -194,7 +194,7 @@ function updateCardList(oldListId, newListId, cardId) {
 function updateListName(listId, listName) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/lists/" + listId.toString(),
+            url: "/lists/" + listId.toString(),
             method: "PATCH",
             data: {name: listName},
             success: function(response) {

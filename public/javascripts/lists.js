@@ -228,6 +228,7 @@ $(function() {
     const addListTemplate = listPage.find("#add-list-template");
     const listEntry = addListTemplate.find("#list-entry");
     const closeListTemplate = addListTemplate.find("#close-list-template");
+    const notificationsPopup = $("#notifications-popup");
     let dragging_card = false;
     let currentCardTemplate;
     let showing_list_template = false;
@@ -238,9 +239,15 @@ $(function() {
     let label_container_height = 68;
 
     linktohome.removeClass("hidden");
+    notificationsPopup.on("click", ".accept-btn", function() {
+        const invite = $(this).parent();
+        acceptInvite(invite.attr("data-id")).then(function(response) {
+            invite.remove();
+        });
+    });
 
     checkHash();
-    
+
     let card_drag = new Draggable.Sortable(document.querySelectorAll(".list"), {
         draggable: '.card',
         mirror: {constrainDimensions: true}

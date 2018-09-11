@@ -86,7 +86,6 @@ router.get("/search/", function(req, res, next) {
       next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not search"));
     });
   }
-
 });
 
 module.exports = router;

@@ -3,6 +3,7 @@ var HTTPStatus = require("http-status");
 var createError = require("http-errors");
 var moment = require("moment");
 var db = require("../models/index.js");
+var socket = require("../socket.js");
 var sequelize = db.sequelize;
 
 var router = express.Router();
@@ -24,11 +25,18 @@ router.get("/id/:name", function(req, res, next) { // get team id associated wit
 router.get("/:id/users", function(req, res, next) {
     const teamId = req.params.id;
     const user_id = req.session.id;
-    const query = `SELECT "u"."id", concat("u"."firstName", ' ', "u"."lastName") AS name
+    const query = `SELECT "u"."id", concat("u"."firstName", ' ', "u"."lastName") AS name, FALSE AS "invited"
                         FROM "teamUsers" "tu"
                         INNER JOIN "users" "u" ON "u"."id" = "tu"."userId"
                         WHERE "tu"."teamId" = :teamId
-                        AND EXISTS (SELECT "userId" FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :userId);`;
+                        AND EXISTS (SELECT "userId" FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :userId)
+                    UNION
+                        (SELECT "i"."targetId", concat("u"."firstName", ' ', "u"."lastName") AS name, TRUE AS "invited"
+                            FROM "invitations" "i"
+                            INNER JOIN "users" "u" ON "u"."id" = "i"."targetId"
+                            LEFT JOIN "teamUsers" "tu" ON "tu"."teamId" = :teamId
+                            WHERE "i"."teamId" = :teamId AND "tu"."userId" = :userId)
+                    ORDER BY "invited";`;
     sequelize.query(query, {replacements: {teamId: teamId, userId: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         res.json(response);
     }).catch(function(thrown) {
@@ -36,41 +44,117 @@ router.get("/:id/users", function(req, res, next) {
     });
 });
 
-router.patch("/:id/users", function(req, res, next) {
+router.get("/invitations", function(req, res, next) { //get all of your invitations
+    const user_id = req.session.id;
+    const query = `SELECT "i"."teamId", concat("u"."firstName", ' ', "u"."lastName") "name", "t"."name" "teamname"
+                        FROM "invitations" "i"
+                        INNER JOIN "users" "u" ON "u"."id" = "i"."inviterId"
+                        INNER JOIN "teams" "t" ON "t".id = "i"."teamId"
+                        WHERE "i"."targetId" = :id;`;
+    sequelize.query(query, {replacements: {id: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        res.json(response);
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve invitations"));
+    });
+});
+
+function checkInvitationAccess(req, res, next) { //check if user is not in team already / user has not been invited to team yet / inviter is in team 
     const teamId = req.params.id;
     const userToAdd = req.body.userId;
     const user_id = req.session.id;
-    if(userToAdd === undefined || userToAdd.toString().trim() === "") 
+    if(userToAdd === undefined || userToAdd.toString().trim() === "" || userToAdd.toString().trim() === user_id.toString().trim()) 
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid user Id"));
     else {
-        const checkAccess = `SELECT "userId" FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :userId;`;
-        sequelize.query(checkAccess, {replacements: {teamId: teamId, userId: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
-            if(response.length > 0) {
-                const q1 = `SELECT "id", concat("firstName", ' ', "lastName") "name"
-                                    FROM "users"
-                                    WHERE "id" = :userToAdd;`;
-                sequelize.query(q1, {replacements: {userToAdd: userToAdd}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
-                    const q2 = `INSERT INTO "teamUsers"
-                                    VALUES (:teamId, :userToAdd, :date);`;
-                    const q1_response = response;
-                    sequelize.query(q2, {replacements: {teamId: teamId, userToAdd: userToAdd, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
-                        res.json(q1_response[0]);   
-                    }).catch(function(thrown) {
-                        next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not insert this user into table"));
-                    });                             
-                }).catch(function(thrown) {
-                    next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; no user found with such id"));
-                });      
-           }
-            else {
-                next(createError(HTTPStatus.UNAUTHORIZED, "User not allowed to access this team"));
-            }
-        }).catch(function(thrown) {
-            next(createError(HTTPStatus.BAD_REQUEST, "Invalid input; could not access team"));
-        });
+        const checkAccess = `SELECT "id" FROM "users"  
+        WHERE EXISTS
+                (SELECT * FROM "invitations"
+                    WHERE "teamId" = :teamId AND "targetId" = :userToAdd)
+        OR EXISTS
+                (SELECT * FROM "teamUsers"
+                    WHERE "teamId" = :teamId AND "userId" = :userToAdd)
 
-        
+        OR NOT EXISTS
+                (SELECT * FROM "teamUsers"
+                    WHERE "teamId" = :teamId AND "userId" = :id)
+        LIMIT 1;`;
+        sequelize.query(checkAccess, {replacements: {id: user_id, teamId: teamId, userToAdd: userToAdd}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+            if(response.length > 0)
+            next(createError(HTTPStatus.BAD_REQUEST, "Invalid invite: user is already in team, has already been invited, or inviter is not in team"));
+            else
+            next();
+        }).catch(function(thrown) {
+            next(createError(HTTPStatus.BAD_REQUST, "Invalid user or team ID"));
+        });
     }
+    
+}
+
+router.post("/:id/invitation", checkInvitationAccess, function(req, res, next) {
+    const teamId = req.params.id;
+    const userToAdd = req.body.userId;
+    const user_id = req.session.id;
+    const query = `INSERT INTO "invitations"
+                            VALUES (:id, :teamId, :userToAdd)
+                            RETURNING *;`; 
+    sequelize.query(query, {replacements: {id: user_id, teamId: teamId, userToAdd: userToAdd}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
+        const target_sock = socket.getSockets()[userToAdd];
+        const insertResponse = response[0];
+        if(target_sock !== undefined) {
+            sequelize.query(`SELECT concat("u"."firstName", ' ', "u"."lastName") "name", "t"."name" "teamname"
+                                FROM "users" "u"
+                                INNER JOIN "teams" "t" ON "t".id = :teamId
+                                INNER JOIN "teamUsers" "tu" ON "tu"."teamId" = "t"."id"
+                                WHERE "t"."id" = :teamId AND "tu"."userId" = :id AND "u"."id" = :id`, {replacements: {id: user_id, teamId: teamId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+            if(response.length > 0)
+                target_sock.emit("invitation", {inviter: response[0].name, teamId: teamId, teamname: response[0].teamname});
+            }).catch(function(thrown) {
+                next(createError(HTTPStatus.BAD_REQUEST, "No such team found available to given user"));
+            });
+        } 
+        res.json(insertResponse);
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.BAD_REQUEST, "Error creating invitation"));
+    });
+});
+
+router.delete("/:id/invitation", function(req, res, next) {
+    const user_id = req.session.id;
+    const teamId = req.params.id;
+    const query = `DELETE FROM "invitations"
+                        WHERE "teamId" = :teamId AND "targetId" = :id`;
+    sequelize.query(query, {replacements: {teamId: teamId, id: user_id}, type: sequelize.QueryTypes.DELETE}).then(function(response) {
+        res.json(response);
+    }).catch(function(thrown) {
+        next(createError(HTTPStatus.BAD_REQUEST, "Invalid team ID"));
+    });
+});
+
+router.patch("/:id/users", function(req, res, next) {
+    const teamId = req.params.id;
+    const user_id = req.session.id;
+    const checkInvite = `SELECT * FROM "invitations"
+                            WHERE "teamId" = :teamId AND "targetId" = :id`;
+    sequelize.query(checkInvite, {replacements: {teamId: teamId, id: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        if(response.length === 0)
+            next(createError(HTTPStatus.UNAUTHORIZED, "User has not been invited to this team"));
+        else {
+            const removeInvite = `DELETE FROM "invitations"
+                                    WHERE "teamId" = :teamId AND "targetId" = :id`;
+            sequelize.query(removeInvite, {replacements: {teamId: teamId, id: user_id}, type: sequelize.QueryTypes.DELETE}).then(function(response) {
+                const addUser = `INSERT INTO "teamUsers"
+                                    VALUES (:teamId, :id, :date)
+                                    RETURNING *`;
+                sequelize.query(addUser, {replacements: {teamId: teamId, id: user_id, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, 
+                    type: sequelize.QueryTypes.INSERT}).then(function(response) {
+                        res.json(response[0][0]);
+                    }).catch(function(thrown) {
+                        next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Error adding user to team"));
+                    });
+            }).catch(function(thrown) {
+                next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Error removing invite from database"));
+            });
+        }
+    });
 });
 
 /*

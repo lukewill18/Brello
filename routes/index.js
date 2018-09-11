@@ -4,6 +4,7 @@ var createError = require("http-errors");
 var db = require("../models/index.js");
 var Sequelize = db.Sequelize;
 var sequelize = db.sequelize;
+var sockets = require("../socket.js").sockets;
 
 var router = express.Router();
 

@@ -235,12 +235,25 @@ body, textarea {
 #notifications-popup {
     height: 400px;
     width: 400px;
-    position: absolute;
+    position: fixed;
     top: 55px;
     right: 20px;
     background: white;
     border-radius: 5px;
     border: 1px solid black;
+    overflow: auto;
+    text-align: center;
+    z-index: 2;
+}
+
+.accept-btn, .decline-btn {
+    width: 100px;
+    height: 50px;
+}
+
+.accept-btn {
+    border: 1px solid black;
+    margin-right: 10px;
 }
 
 #header-user-icon {

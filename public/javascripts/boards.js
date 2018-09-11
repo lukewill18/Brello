@@ -164,11 +164,11 @@ function getTeamMembers(teamId) {
     });
 }
 
-function addUserToTeam(userId, teamId) {
+function inviteUserToTeam(userId, teamId) {
     return new Promise(function(resolve, reject) {
         $.ajax({
-            url: "http://localhost:3000/teams/" + teamId.toString() + "/users",
-            method: "PATCH",
+            url: "http://localhost:3000/teams/" + teamId.toString() + "/invitation",
+            method: "POST",
             data: {userId},
             success: function(response) {
                 resolve(response);
@@ -180,12 +180,23 @@ function addUserToTeam(userId, teamId) {
     });
 }
 
+function getTeamBoards(teamId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/boards/team/" + teamId.toString(),
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
 $(function() {
-    //const header = $("#header");
     const linktohome = $("#linktohome");
     const boardPage = $("#board-page");
-    const searchbar = $("#searchbar");
-    const matchList = $("#match-list");
     const recentBoards = boardPage.find("#recently-viewed-boards-row");
     const personalBoards = boardPage.find("#personal-boards-row");
     const teamBoards = boardPage.find("#team-rows-container");
@@ -205,9 +216,30 @@ $(function() {
     const boardTitleEntry = addBoardModal.find("#board-title-entry");
     const boardTeamEntry = addBoardModal.find("#team-dropdown");
     const finishTeamCreationBtn = createTeamPopup.find("#create-new-team-btn");
+    const notificationsPopup = $("#notifications-popup");
     let current_team_members = [];
 
     window.location.hash = "";
+    
+    notificationsPopup.on("click", ".accept-btn", function() {
+        const invite = $(this).parent();
+        const teamName = invite.find(".invite-team-name").text();
+        acceptInvite(invite.attr("data-id")).then(function(response) {
+            getTeamBoards(response.teamId).then(function(boards) {
+                let temp = ``;
+                boardTeamEntry.append(`<option value=${teamName}>${teamName}</option>`);
+                temp += `<div class="row team-boards-row" data-name="${teamName}" data-id=${response.teamId}>
+                            <i class="fas fa-users"></i> <h5>${teamName}</h5> <button class="btn btn-info add-members-btn">Add members</button><br>`;
+                for(let i = 0; i < boards.length; ++i) {
+                    temp += `<div class="board-item board-box" data-id=${boards[i].id}>${boards[i].title}</div>`;
+                }
+                temp += `<div class="create-board-item board-box"><p>Create new board...</p></div>
+                    </div>`;
+                teamBoards.append(temp);
+                invite.remove();
+            }); 
+        });
+    });
 
     getAllBoards(personalBoards, teamBoards, boardTeamEntry).then(function(resolve) {
         linktohome.addClass("hidden");
@@ -254,7 +286,10 @@ $(function() {
         teamMemberList.find(".team-member").remove();
         let temp = ``;
         for(let i = 0; i < members.length; ++i) {
-            temp += `<li class="team-member" data-id=${members[i].id}>${members[i].name}</li>`
+            temp += `<li class="team-member" data-id=${members[i].id}>${members[i].name}`;
+            if(members[i].invited)
+                temp += ` (pending)`;
+            temp += `</li>`;
         }
         teamMemberList.append(temp);
     }
@@ -282,12 +317,13 @@ $(function() {
     }  
 
     userMatchList.on("click", ".user-match", function() {
-        addUserToTeam($(this).attr("data-id"), addTeamMemberModal.attr("data-id")).then(function(response) {
-            teamMemberList.append(`<li class="team-member" data-id=${response.teamId}>${response.name}</li>`);
+        const name = $(this).text();
+        inviteUserToTeam($(this).attr("data-id"), addTeamMemberModal.attr("data-id")).then(function(response) {
+            teamMemberList.append(`<li class="team-member" data-id=${addTeamMemberModal.attr("data-id")}>${name} (pending)</li>`);
             userMatchList.find(".user-match").remove();
             teamMemberInput.val("");
             teamMemberInput.focus();
-            current_team_members.push(response.id);
+            current_team_members.push(response.targetId);
         });
     });
     

@@ -12,6 +12,50 @@ function search(query) {
     });
 }
 
+function getInvitations() {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/teams/invitations",
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
+function acceptInvite(teamId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/teams/" + teamId.toString() + "/users",
+            method: "PATCH",
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
+function declineInvite(teamId) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "http://localhost:3000/teams/" + teamId.toString() + "/invitation",
+            method: "DELETE",
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
+    });
+}
+
 $(function() {
     const header = $("#header");
     const linktohome = $("#linktohome");
@@ -25,8 +69,30 @@ $(function() {
     const cardMatches = matchArea.find("#card-matches");
     const userIcon = $("#header-user-icon");
 
+    function displayInvitations(invitations) {
+        notificationsPopup.find(".team-invitation").remove();
+        let temp = ``;
+        for(let i = 0; i < invitations.length; ++i) {
+            temp += `<div class="team-invitation" data-id=${invitations[i].teamId}><p>${invitations[i].name} has invited you to join the team "<span class="invite-team-name">${invitations[i].teamname}</span>"</p>
+                        <button class="btn btn-info accept-btn">Accept</button><button class="btn btn-offer decline-btn">Decline</button>
+                    </div>`;
+        }   
+        notificationsPopup.append(temp);
+    }
+
+    getInvitations().then(function(response) {
+        displayInvitations(response);
+    });
+
+    notificationsPopup.on("click", ".decline-btn", function() {
+        const invite = $(this).parent();
+        declineInvite(invite.attr("data-id")).then(function(response) {
+            invite.remove();
+        });
+    });
+
     $("body").click(function(e) {
-        if(!$(e.target).is(notificationsPopup) && !$(e.target).is(notificationsBtn)) {
+        if(!$(e.target).is(notificationsPopup) && !$(e.target).is(notificationsBtn) && !$(e.target).parent().is(notificationsPopup) && !$(e.target).parent().parent().is(notificationsPopup)) {
             notificationsPopup.addClass("hidden");
         }
         if(!$(e.target).is(searchbar) && !($(e.target).is(searchIcon)) && !($(e.target).is(matchArea)) && !($(e.target).parent().is(matchArea))) {

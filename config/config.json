@@ -18,12 +18,6 @@
     "timestamps": false
   },
   "production": {
-    "username": "project2",
-    "password": "project2",
-    "database": "project2",
-    "host": "localhost",
-    "port": "5400",
-    "dialect": "postgres",
-    "timestamps": false
+      "use_env_variable": "DATABASE_URL"
   }
 }

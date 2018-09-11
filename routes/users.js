@@ -44,7 +44,7 @@ router.post("/login/", function(req, res, next) {
   if(email === undefined || password === undefined || email.toString().trim() === "" || password === "")
     next(createError(HTTPStatus.BAD_REQUEST, "One or more fields left blank"));
   else {
-    sequelize.query(`SELECT "id", "password" FROM "users" WHERE "email" = :email`, 
+    sequelize.query(`SELECT "id", "password", concat("firstName", ' ', "lastName") "name" FROM "users" WHERE "email" = :email`, 
     {replacements: {email: email.trim()}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
       if(response.length === 0) {
         next(createError(HTTPStatus.BAD_REQUEST, "No account found with given email"));
@@ -57,6 +57,7 @@ router.post("/login/", function(req, res, next) {
           }
           if(crypt_res) {
             req.session.id = response[0].id;
+            req.session.name = response[0].name;
             res.json({id: response[0].id});
           }
           else {

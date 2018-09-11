@@ -56,6 +56,11 @@ function declineInvite(teamId) {
     });
 }
 
+function getUserName() {
+    return new Promise(function(resolve, reject) {
+    });
+}   
+
 $(function() {
     const header = $("#header");
     const linktohome = $("#linktohome");
@@ -71,13 +76,16 @@ $(function() {
 
     function displayInvitations(invitations) {
         notificationsPopup.find(".team-invitation").remove();
-        let temp = ``;
-        for(let i = 0; i < invitations.length; ++i) {
-            temp += `<div class="team-invitation" data-id=${invitations[i].teamId}><p>${invitations[i].name} has invited you to join the team "<span class="invite-team-name">${invitations[i].teamname}</span>"</p>
-                        <button class="btn btn-info accept-btn">Accept</button><button class="btn btn-offer decline-btn">Decline</button>
-                    </div>`;
-        }   
-        notificationsPopup.append(temp);
+        if(invitations.length > 0) {
+            let temp = ``;
+            for(let i = 0; i < invitations.length; ++i) {
+                temp += `<div class="team-invitation" data-id=${invitations[i].teamId}><p>${invitations[i].name} has invited you to join the team "<span class="invite-team-name">${invitations[i].teamname}</span>"</p>
+                            <button class="btn btn-info accept-btn">Accept</button><button class="btn btn-offer decline-btn">Decline</button>
+                        </div>`;
+            }   
+            notificationsBtn.addClass("notifications-unread");
+            notificationsPopup.append(temp);
+        }
     }
 
     getInvitations().then(function(response) {
@@ -163,6 +171,7 @@ $(function() {
 
     notificationsBtn.click(function() {
         notificationsPopup.toggleClass("hidden");
+        notificationsBtn.removeClass("notifications-unread");
     });
     
     linktohome.click(function() {

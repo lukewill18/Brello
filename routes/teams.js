@@ -79,9 +79,9 @@ function checkInvitationAccess(req, res, next) { //check if user is not in team 
         LIMIT 1;`;
         sequelize.query(checkAccess, {replacements: {id: user_id, teamId: teamId, userToAdd: userToAdd}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
             if(response.length > 0)
-            next(createError(HTTPStatus.BAD_REQUEST, "Invalid invite: user is already in team, has already been invited, or inviter is not in team"));
+                next(createError(HTTPStatus.BAD_REQUEST, "Invalid invite: user is already in team, has already been invited, or inviter is not in team"));
             else
-            next();
+                next();
         }).catch(function(thrown) {
             next(createError(HTTPStatus.BAD_REQUST, "Invalid user or team ID"));
         });

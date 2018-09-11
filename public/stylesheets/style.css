@@ -228,6 +228,10 @@ body, textarea {
     top: 5px;
 }
 
+.notifications-unread {
+    background: rgba(255, 0, 0, .65)!important;
+}
+
 #header .fas:hover:not(#search-icon) {
     background: rgba(255, 255, 255, .2);
 }
@@ -244,6 +248,7 @@ body, textarea {
     overflow: auto;
     text-align: center;
     z-index: 2;
+    padding: 10px;
 }
 
 .accept-btn, .decline-btn {
@@ -466,7 +471,7 @@ body, textarea {
 }
 
 #create-new-team-popup {
-    position: absolute;
+    position: fixed;
     bottom: 5px;
     left: 33%;
     width: 305px;
@@ -748,8 +753,13 @@ body, textarea {
     width: 30px;
     height: 30px;
     border-radius: 50px;
-    background-color: grey;
+    background-color: #acacac;
     display: inline-block;
+    color: black;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    padding-top: 6px;
 }
 
 .modal-user-icon {

@@ -63,6 +63,9 @@ router.get("/:id", verifyAccess, function(req, res, next) {
             card.labels = response;
             sequelize.query(q3, {replacements: {cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
                 card.comments = response;
+                for(let i = 0; i < response.length; ++i) {
+                    card.comments[i].timeAgo = moment(response[i].datetime).from(moment(Date.now()))
+                }
                 res.json(card);
             }).catch(function(thrown) {
                 next(err_invalid);
@@ -122,8 +125,12 @@ router.post("/:id/comment", verifyAccess, function(req, res, next) {
                         WHERE "id" = :userId) "name";`;
         sequelize.query(query, {replacements: {cardId: cardId, userId: user_id, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), comment: comment},
         type: sequelize.QueryTypes.INSERT}).then(function(response) {
-            res.status(HTTPStatus.CREATED).json(response[0][0]);
+            const timeAgo = moment(response[0][0].datetime).from(moment(Date.now()));
+            let obj = response[0][0];
+            obj.timeAgo = timeAgo;
+            res.status(HTTPStatus.CREATED).json(obj);
         }).catch(function(thrown) {
+            console.log(thrown);
             next(createError(HTTPStatus.BAD_REQUEST, "Could not insert comment"));
         });
         
@@ -187,4 +194,5 @@ router.patch("/:id/list", verifyAccess, function(req, res, next) {
         });
     }
 });
+
 module.exports = router;

@@ -8,15 +8,20 @@ chai.use(chaiHttp);
 
 const sampleRegister2 = {
     first_name: "Sample",
-      last_name: "User 2",
-      email: "test2@sample.com",
-      password: "password"
-}
+    last_name: "User 2",
+    email: "test2@sample.com",
+    password: "password"
+};
 
 const sampleLogin = {
     email: "test@sample.com",
     password: "password"
-}
+};
+
+const sampleLogin2 = {
+    email: "test2@sample.com",
+    password: "password"
+};
 
 var teamId;
 var user2Id;
@@ -95,17 +100,19 @@ describe("Teams", function() {
           });
       });
 
-      it('Add a user to a team', function(done) {
+      it('Invite a user to a team', function(done) {
         var agent = chai.request.agent(app);
         agent
             .post('/users/login')
             .send(sampleLogin)
             .then(res => {
                 expect(res).to.have.cookie('session');
-                return agent.patch('/teams/' + teamId.toString() + '/users').send({userId: user2Id})
+                return agent.post('/teams/' + teamId.toString() + '/invitation').send({userId: user2Id})
                     .then(function(res) {
                         expect(res).to.have.status(HTTPStatus.OK);
-                        expect(res.body.id).to.eql(user2Id);
+                        expect(res.body[0].targetId).to.eql(user2Id);
+                        expect(res.body[0]).to.have.property("teamId");
+                        expect(res.body[0]).to.have.property("inviterId");
                         done();
                     });
             })
@@ -114,17 +121,38 @@ describe("Teams", function() {
             });
       });
 
-      it('Fail to add a nonexistent user to a team', function(done) {
+      it('Successfully join a team', function(done) {
+        var agent = chai.request.agent(app);
+        agent
+            .post('/users/login')
+            .send(sampleLogin2)
+            .then(res => {
+                expect(res).to.have.cookie('session');
+                return agent.patch('/teams/' + teamId.toString() + '/users')
+                    .then(function(res) {
+                        expect(res).to.have.status(HTTPStatus.OK);
+                        expect(res.body.userId).to.eql(user2Id);
+                        expect(res.body.teamId).to.eql(teamId);
+                        expect(res.body).to.have.property("joinedAt")
+                        done();
+                    });
+            })
+            .catch(err => {
+                done(err);
+            });
+      });
+
+      it('Fail to invite a nonexistent user to a team', function(done) {
         var agent = chai.request.agent(app);
         agent
             .post('/users/login')
             .send(sampleLogin)
             .then(res => {
                 expect(res).to.have.cookie('session');
-                return agent.patch('/teams/' + teamId.toString() + '/users').send({userId: -1})
+                return agent.post('/teams/' + teamId.toString() + '/invitation').send({userId: -1})
                     .then(function(res) {
                         expect(res).to.have.status(HTTPStatus.BAD_REQUEST);
-                        expect(res.body.error).to.eql('Invalid input; could not insert this user into table');
+                        expect(res.body.error).to.eql("Error creating invitation");
                         done();
                     });
             })

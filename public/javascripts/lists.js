@@ -605,7 +605,7 @@ $(function() {
         return `<li class="modal-comment-info" data-id=${comment.id}>
                     <div class="user-icon modal-user-icon">${initials}</div>
                     <h5 class="modal-comment-name">${comment.name}</h5>
-                    <p class="modal-comment-time">${comment.datetime}</p>
+                    <p class="modal-comment-time">${comment.timeAgo}</p>
                     <div class="modal-comment"><p>${comment.body}</p></div>
                     <div class="solid-line"></div>
                 </li>`;

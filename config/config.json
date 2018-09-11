@@ -11,7 +11,7 @@
   "test": {
     "username": "project2",
     "password": "project2",
-    "database": "project2",
+    "database": "project2_test",
     "host": "localhost",
     "port": "5400",
     "dialect": "postgres",

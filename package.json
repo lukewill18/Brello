@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "migrate": "sequelize db:migrate"
+    "migrate": "sequelize db:migrate",
+    "pretest": "sequelize db:migrate --env=test",
+    "test": "mocha --exit",
+    "posttest": "sequelize db:undo:all --env=test"
   },
   "engines": {
     "node": "8.11.3"

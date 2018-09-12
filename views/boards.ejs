@@ -11,6 +11,7 @@
     <% const initials = userName.toUpperCase().split(" "); %>
     <div id="header">
         <i class="fas fa-home hidden" id="linktohome"></i>
+        <div id="boards-btn">Boards</div>
         <input type="text" id="searchbar">
         <i class="fas fa-search" id="search-icon"></i>
         <h3>Brello</h3>
@@ -26,6 +27,7 @@
         </div>
     </div>
     <div id="notifications-popup" class="hidden">
+        <!--<h4 id="no-notifications">No new notifications</h4>-->
     </div>
 
     <div id="board-page">
@@ -53,6 +55,7 @@
             </div>
         </div>
         <div class="row" id="board-page-row">
+            <div id="board-popup" class="hidden"></div>
             <div class="col-4 col-sm-0" id="board-sidebar">
             </div>
             <div class="col-8 col-sm-12" id="all-boards">
@@ -83,7 +86,7 @@
     <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        id = <%=userId%>
+        const id = <%=userId%>
     </script>
     <script src="/javascripts/socket.js"></script>
     <script src="/javascripts/header.js"></script>

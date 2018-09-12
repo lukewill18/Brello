@@ -6,7 +6,7 @@
     "start": "node ./bin/www",
     "migrate": "sequelize db:migrate",
     "pretest": "sequelize db:migrate --env=test",
-    "test": "mocha --exit",
+    "test": "cross-env NODE_ENV=test mocha --exit",
     "posttest": "sequelize db:undo:all --env=test"
   },
   "engines": {
@@ -31,5 +31,8 @@
     "sequelize": "^4.38.0",
     "sequelize-cli": "^4.1.1",
     "socket.io": "^2.1.1"
+  },
+  "devDependencies": {
+    "cross-env": "^5.2.0"
   }
 }

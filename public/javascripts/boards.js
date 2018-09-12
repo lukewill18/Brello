@@ -26,12 +26,12 @@ function displayTeamBoards(teams, teamBoards, boardTeamEntry) {
 
 function displayAllBoards(response, personalBoards, teamBoards, boardTeamEntry) {
     let personals = response.find(function(o) {
-        return o.teamId == null;
+        return o.isPersonal;
     });
     if(personals)
         displayPersonalBoards(personals.boards, personalBoards);
     let teams = response.filter(function(o) {
-        return o.teamId != null;
+        return !o.isPersonal;
     });
     displayTeamBoards(teams, teamBoards, boardTeamEntry);
 }
@@ -248,14 +248,6 @@ $(function() {
     }).then(function(resolve) {
         displayMostRecentBoards(resolve);
     });
-
-    function openBoard(board_id) {
-        window.location.pathname = "boards/" + board_id;
-    }
-
-    boardPage.on("click", ".board-item", function() {
-        openBoard($(this).attr("data-id"));
-    });
     
     function hideCreateTeamPopup() {
         createTeamPopup.addClass("hidden");
@@ -272,6 +264,12 @@ $(function() {
 
     createTeamBtn.click(function() {
         createTeamPopup.removeClass("hidden");
+        if(boardPage.innerHeight() - createTeamBtn.offset().top >= createTeamPopup.innerHeight() + 5) {
+            createTeamPopup.offset(createTeamBtn.offset());
+        }
+        else {
+            createTeamPopup.css({'top': 'auto', 'left': 'auto'});
+        }
         createTeamName.focus();
     });
 
@@ -287,7 +285,7 @@ $(function() {
         let temp = ``;
         for(let i = 0; i < members.length; ++i) {
             temp += `<li class="team-member" data-id=${members[i].id}>${members[i].name}`;
-            if(members[i].invited)
+            if(members[i].joinedAt === null)
                 temp += ` (pending)`;
             temp += `</li>`;
         }
@@ -323,7 +321,7 @@ $(function() {
             userMatchList.find(".user-match").remove();
             teamMemberInput.val("");
             teamMemberInput.focus();
-            current_team_members.push(response.targetId);
+            current_team_members.push(response[0].targetId);
         });
     });
     

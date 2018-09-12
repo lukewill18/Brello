@@ -3,6 +3,7 @@ var HTTPStatus = require("http-status");
 var createError = require("http-errors");
 var moment = require("moment");
 var db = require("../models/index.js");
+var socket = require("../socket.js");
 var sequelize = db.sequelize;
 
 var router = express.Router();
@@ -24,19 +25,37 @@ function verifyAccess(req, res, next) {
     });
 }
 
+function notifyBoardCreation(uid, uname, board) {
+    const query = `SELECT "tu"."userId", "t"."name"
+                        FROM "teamUsers" "tu"
+                        INNER JOIN "teams" "t" ON "t"."id" = :teamId
+                        WHERE "tu"."teamId" = :teamId AND "tu"."userId" != :id`;
+    sequelize.query(query, {replacements: {teamId: board.teamId, id: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        const sockets = socket.getSockets();
+        for(let i = 0; i < response.length; ++i) {
+            if(sockets[response[i].userId] !== undefined) {
+                sockets[response[i].userId].emit("teamNotification", {type: "newBoard", name: uname, team: response[i].name, boardTitle: board.title, boardId: board.id});
+            }
+        }
+    }).catch(function(thrown) {
+        console.log(thrown);
+    });
+}
+
 router.get("/", function(req, res, next) {
     res.render("boards", {userId: req.session.id, userName: req.session.name});
 });
 
 router.get("/all", function(req, res, next) {
-    const query = `SELECT "t"."id" "teamId", "t"."name" "teamName",
-                        json_agg("b".*) "boards" FROM (SELECT * FROM "boards" ORDER BY "createdAt" ASC) "b"
-                    FULL OUTER JOIN "teams" t
-                        ON "b"."teamId" = "t"."id"
-                    LEFT JOIN (SELECT * FROM "teamUsers" ORDER BY "joinedAt") tu
-                        ON "t"."id" = "tu"."teamId" AND :id = "tu"."userId"
-                    WHERE "tu"."userId" = :id OR "b"."ownerId" = :id
-                    GROUP BY "t"."id";`;
+    const query = `SELECT "t"."id" "teamId", "t"."name" "teamName", ("t"."id" IS NULL) "isPersonal",
+                            json_agg("b".*) "boards" FROM (SELECT * FROM "boards" ORDER BY "createdAt" ASC) "b"
+                        FULL OUTER JOIN "teams" t
+                            ON "b"."teamId" = "t"."id"
+                        LEFT JOIN (SELECT * FROM "teamUsers" ORDER BY "joinedAt") tu
+                            ON "t"."id" = "tu"."teamId" AND :id = "tu"."userId"
+                        WHERE "tu"."userId" = :id OR "b"."ownerId" = :id
+                        GROUP BY "t"."id", "tu"."joinedAt"
+                        ORDER BY "isPersonal" DESC, "tu"."joinedAt" ASC;`;
     const uid = req.session.id;
     sequelize.query(query, {replacements: {id: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         res.json(response);
@@ -102,6 +121,7 @@ router.post("/", function(req, res, next) {
                     const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :date, :date) RETURNING *`;
                     sequelize.query(query, {replacements: {ownerid: ownerId, teamid: teamId, title: name.trim(), date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), date2: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')},
                      type: sequelize.QueryTypes.INSERT}).then(function(response) {
+                        notifyBoardCreation(req.session.id, req.session.name, response[0][0]);
                         res.status(HTTPStatus.CREATED).json(response[0][0]);
                     }).catch(function(thrown) {
                         next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Problem inserting board"));

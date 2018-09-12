@@ -7,10 +7,11 @@
         <link rel="stylesheet" href="/stylesheets/bootstrap.css">
         <link rel="stylesheet" href="/stylesheets/style.css">
     </head>
-    <body>
+    <body id="lists-body">
         <% const initials = userName.toUpperCase().split(" "); %>
         <div id="header">
             <i class="fas fa-home hidden" id="linktohome"></i>
+            <div id="boards-btn">Boards</div>
             <input type="text" id="searchbar">
             <i class="fas fa-search" id="search-icon"></i>
             <h3>Brello</h3>
@@ -26,8 +27,10 @@
             </div>
         </div>
         <div id="notifications-popup" class="hidden">
+            <!--<h4 id="no-notifications">No new notifications</h4>-->
         </div>
         <div id="list-page">
+            <div id="board-popup" class="hidden"></div>
             <div id="card-modal-container" class="hidden">
                 <div id="card-modal">
                     <i class="fas fa-times" id="close-card-modal"></i>
@@ -87,7 +90,7 @@
         <script src="https://cdn.jsdelivr.net/npm/@shopify/draggable@1.0.0-beta.7/lib/draggable.bundle.js"></script>
         <script src="/socket.io/socket.io.js"></script>
         <script>
-            id = <%=userId%>
+            const id = <%=userId%>
         </script>
         <script src="/javascripts/socket.js"></script>
         <script src="/javascripts/header.js"></script>

@@ -2,6 +2,7 @@ var express = require('express');
 var HTTPStatus = require("http-status");
 var createError = require("http-errors");
 var moment = require("moment");
+var socket = require("../socket");
 var db = require("../models/index.js");
 var Sequelize = db.Sequelize;
 var sequelize = db.sequelize;
@@ -26,6 +27,24 @@ function verifyAccess(req, res, next) {
     });
 }
 
+function notifyListCreation(uid, uname, list) {
+    const query = `SELECT "tu"."userId", "t"."name", "b"."title", "b"."id"
+                        FROM "boards" "b"
+                        INNER JOIN "teamUsers" "tu" ON "tu"."teamId" = "b"."teamId"
+                        INNER JOIN "teams" "t" ON "t"."id" = "tu"."teamId"
+                        WHERE "b"."id" = :boardId AND "tu"."userId" != :id`;
+    sequelize.query(query, {replacements: {boardId: list.boardId, id: uid}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
+        const sockets = socket.getSockets();
+        for(let i = 0; i < response.length; ++i) {
+            if(sockets[response[i].userId] !== undefined) {
+                sockets[response[i].userId].emit("teamNotification", {type: "newList", name: uname, boardTitle: response[i].title, boardId: response[i].id, team: response[i].name, list: list.name});
+            }
+        }
+    }).catch(function(thrown) {
+        console.log(thrown);
+    });
+}
+
 router.get("/", function(req, res, next) {
     res.redirect("/boards");
 });
@@ -41,10 +60,11 @@ router.post("/", function(req, res, next) {
                             RETURNING *`;
         sequelize.query(query, {replacements: {id: user_id, boardid: boardId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), listname: listname}, 
                         type: sequelize.QueryTypes.INSERT}).then(function(response) {
-            res.status(HTTPStatus.CREATED).json(response[0][0]);
-        }).catch(function(thrown) {
-            next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
-        });
+                            notifyListCreation(req.session.id, req.session.name, response[0][0]);
+                            res.status(HTTPStatus.CREATED).json(response[0][0]);
+                        }).catch(function(thrown) {
+                            next(createError(HTTPStatus.BAD_REQUEST, "Invalid listname or board ID"));
+                        });
     }
 });
 

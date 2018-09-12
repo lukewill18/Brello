@@ -91,7 +91,7 @@ describe('Boards', function() {
               expect(res).to.have.cookie('session');
               return agent.get('/boards/all')
                   .then(function(res) {
-                      console.log(res.body);
+                      console.log(res.body[0].boards);
                       expect(res).to.have.status(HTTPStatus.OK);
                       expect(res.body[0].teamId).eql(null);
                       expect(res.body[0].boards).to.have.lengthOf(2);

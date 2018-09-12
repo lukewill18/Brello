@@ -56,10 +56,20 @@ function declineInvite(teamId) {
     });
 }
 
-function getUserName() {
+function getBoardsForPopup() {
     return new Promise(function(resolve, reject) {
+        $.ajax({
+            url: "/boards/all/",
+            success: function(response) {
+                resolve(response);
+            },
+            error: function(thrown) {
+                reject(thrown);
+            }
+        });
     });
-}   
+}
+
 
 $(function() {
     const header = $("#header");
@@ -73,6 +83,8 @@ $(function() {
     const boardMatches = matchArea.find("#board-matches");
     const cardMatches = matchArea.find("#card-matches");
     const userIcon = $("#header-user-icon");
+    const boardsBtn = $("#boards-btn")
+    const boardsPopup = $("#board-popup");
 
     function displayInvitations(invitations) {
         notificationsPopup.find(".team-invitation").remove();
@@ -99,6 +111,28 @@ $(function() {
         });
     });
 
+    function fillPopup(teams) {
+        boardsPopup.children().remove();
+        let temp = ``;
+        for(let i = 0; i < teams.length; ++i) {
+            if(teams[i].boards[0] === null) continue;
+            temp += !teams[i].isPersonal ? `<h4>${teams[i].teamName}</h4>` : `<h4>Personal Boards<h4>`;
+            for(let j = 0; j < teams[i].boards.length; ++j) {
+                temp += `<div class="board-item board-popup-item" data-id=${teams[i].boards[j].id}>${teams[i].boards[j].title}</div>`;
+            }
+        }
+        boardsPopup.append(temp);
+    }
+
+    boardsBtn.click(function() {
+        boardsPopup.toggleClass("hidden");
+        if(!boardsPopup.hasClass("hidden")) {
+            getBoardsForPopup().then(function(teams) {
+                fillPopup(teams);
+            });
+        }
+    });
+
     $("body").click(function(e) {
         if(!$(e.target).is(notificationsPopup) && !$(e.target).is(notificationsBtn) && !$(e.target).parent().is(notificationsPopup) && !$(e.target).parent().parent().is(notificationsPopup)) {
             notificationsPopup.addClass("hidden");
@@ -106,7 +140,19 @@ $(function() {
         if(!$(e.target).is(searchbar) && !($(e.target).is(searchIcon)) && !($(e.target).is(matchArea)) && !($(e.target).parent().is(matchArea))) {
             matchArea.addClass("hidden");
         }
+        if(!$(e.target).is(boardsPopup) && !$(e.target).is(boardsBtn) && !$(e.target).parent().is(boardsPopup)) {
+            boardsPopup.addClass("hidden");
+        }
     });
+
+    function openBoard(board_id) {
+        window.location.pathname = "boards/" + board_id;
+    }
+
+    $("body").on("click", ".board-item, .board-link", function() {
+        openBoard($(this).attr("data-id"));
+    });
+
 
     function displayBoardMatches(boards) {
         if(boards === null) {

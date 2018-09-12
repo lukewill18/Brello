@@ -73,7 +73,6 @@ router.get("/:id", verifyAccess, function(req, res, next) {
         }).catch(function(thrown) {
             next(err_invalid);
         });
-        //res.json(relevant);
     }).catch(function(thrown) {
         next(err_invalid);
     });

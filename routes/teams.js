@@ -25,18 +25,18 @@ router.get("/id/:name", function(req, res, next) { // get team id associated wit
 router.get("/:id/users", function(req, res, next) {
     const teamId = req.params.id;
     const user_id = req.session.id;
-    const query = `SELECT "u"."id", concat("u"."firstName", ' ', "u"."lastName") AS name, FALSE AS "invited"
+    const query = `SELECT "u"."id", concat("u"."firstName", ' ', "u"."lastName") AS name, "tu"."joinedAt"
                         FROM "teamUsers" "tu"
                         INNER JOIN "users" "u" ON "u"."id" = "tu"."userId"
                         WHERE "tu"."teamId" = :teamId
                         AND EXISTS (SELECT "userId" FROM "teamUsers" WHERE "teamId" = :teamId AND "userId" = :userId)
                     UNION
-                        (SELECT "i"."targetId", concat("u"."firstName", ' ', "u"."lastName") AS name, TRUE AS "invited"
+                        (SELECT "i"."targetId", concat("u"."firstName", ' ', "u"."lastName") AS name, NULL AS "joinedAt"
                             FROM "invitations" "i"
                             INNER JOIN "users" "u" ON "u"."id" = "i"."targetId"
                             LEFT JOIN "teamUsers" "tu" ON "tu"."teamId" = :teamId
                             WHERE "i"."teamId" = :teamId AND "tu"."userId" = :userId)
-                    ORDER BY "invited";`;
+                    ORDER BY "joinedAt";`;
     sequelize.query(query, {replacements: {teamId: teamId, userId: user_id}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
         res.json(response);
     }).catch(function(thrown) {

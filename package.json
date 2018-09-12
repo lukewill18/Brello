@@ -7,7 +7,7 @@
     "migrate": "sequelize db:migrate",
     "pretest": "sequelize db:migrate --env=test",
     "test": "cross-env NODE_ENV=test mocha --exit",
-    "posttest": "sequelize db:undo:all --env=test"
+    "posttest": "sequelize db:migrate:undo:all --env=test"
   },
   "engines": {
     "node": "8.11.3"

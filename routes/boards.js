@@ -48,11 +48,11 @@ router.get("/", function(req, res, next) {
 
 router.get("/all", function(req, res, next) {
     const query = `SELECT "t"."id" "teamId", "t"."name" "teamName", ("t"."id" IS NULL) "isPersonal",
-                            json_agg("b".*) "boards" FROM (SELECT * FROM "boards" ORDER BY "createdAt" ASC) "b"
+                        json_agg("b".*) "boards" FROM (SELECT * FROM "boards" ORDER BY "createdAt" DESC) "b"
                         FULL OUTER JOIN "teams" t
-                            ON "b"."teamId" = "t"."id"
+                        ON "b"."teamId" = "t"."id"
                         LEFT JOIN (SELECT * FROM "teamUsers" ORDER BY "joinedAt") tu
-                            ON "t"."id" = "tu"."teamId" AND :id = "tu"."userId"
+                        ON "t"."id" = "tu"."teamId" AND :id = "tu"."userId"
                         WHERE "tu"."userId" = :id OR "b"."ownerId" = :id
                         GROUP BY "t"."id", "tu"."joinedAt"
                         ORDER BY "isPersonal" DESC, "tu"."joinedAt" ASC;`;

@@ -116,7 +116,7 @@ $(function() {
         let temp = ``;
         for(let i = 0; i < teams.length; ++i) {
             if(teams[i].boards[0] === null) continue;
-            temp += !teams[i].isPersonal ? `<h4>${teams[i].teamName}</h4>` : `<h4>Personal Boards<h4>`;
+            temp += !teams[i].isPersonal ? `<i class="fas fa-users"></i><h4>${teams[i].teamName}</h4><br>` : `<i class="fas fa-user"></i><h4>Personal Boards</h4><br>`;
             for(let j = 0; j < teams[i].boards.length; ++j) {
                 temp += `<div class="board-item board-popup-item" data-id=${teams[i].boards[j].id}>${teams[i].boards[j].title}</div>`;
             }

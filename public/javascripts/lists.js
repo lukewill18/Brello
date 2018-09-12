@@ -450,7 +450,7 @@ $(function() {
             cardModal.height(cardModal.height() + diff);
             label_container_height = labelContainer.height();
         }
-            
+        cardModal.height(cardModal.height() + cardModalName.height() - 22);
     }
 
     function showCardModalDesc(desc) {

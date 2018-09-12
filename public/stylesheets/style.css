@@ -158,6 +158,10 @@ body, textarea {
 
 #board-popup h4 {
     text-align: center;
+    display: inline-block;
+    margin-left: 20px;
+    max-width: 80%;
+    word-wrap: break-word;
 }
 
 #board-popup h4:nth-child(1) {
@@ -754,6 +758,11 @@ body, textarea {
     padding: 20px;
 }
 
+#card-modal .fa-window-maximize {
+    vertical-align: top;
+    margin-top: 3px;
+}
+
 #card-modal textarea {
     border-radius: 5px;
 }
@@ -773,7 +782,7 @@ body, textarea {
     display: inline-block;
     color: black;
     width: fit-content;
-    max-width: 100%;
+    max-width: 90%;
     word-wrap: break-word;
 }
 
@@ -820,6 +829,28 @@ body, textarea {
     border-radius: 5px;
 }
 
+.label:nth-child(5n + 1) {
+    background-color: #F0E14C;
+}
+
+.label:nth-child(5n + 2) {
+    background-color: #FFBB20;
+}
+
+.label:nth-child(5n + 3) {
+    background-color: #FA7B12;
+}
+
+.label:nth-child(5n + 4) {
+    background-color: #E85305;
+}
+
+.label:nth-child(5n + 5) {
+    background-color: #59CC0D;
+}
+
+
+
 .label {
     border: 1px solid black;
     font-size: 16px;
@@ -845,14 +876,14 @@ body, textarea {
 
 .remove-label {
     color: white!important;
-    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 }
 
 .user-icon {
     width: 30px;
     height: 30px;
     border-radius: 50px;
-    background-color: #acacac;
+    background-color: white;
+    border: 1px solid black;
     display: inline-block;
     color: black;
     text-align: center;

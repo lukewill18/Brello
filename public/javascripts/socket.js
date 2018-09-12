@@ -22,7 +22,7 @@ $(function() {
             case "newList":
                 temp += `<p>${data.name} has created a new list named "${data.list}" in board <span class="board-link" data-id=${data.boardId}>${data.boardTitle}</span> from team "${data.team}"</p>`;
         }
-        notifications.append(temp + `</div>`)
+        notifications.append(temp + `</div>`);
         notificationsBtn.addClass("notifications-unread");
     });
 });

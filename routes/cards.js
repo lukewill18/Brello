@@ -64,7 +64,7 @@ router.get("/:id", verifyAccess, function(req, res, next) {
             sequelize.query(q3, {replacements: {cardId: cardId}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
                 card.comments = response;
                 for(let i = 0; i < response.length; ++i) {
-                    card.comments[i].timeAgo = moment(response[i].datetime).from(moment(Date.now()))
+                    card.comments[i].timeAgo = moment(response[i].datetime).from(moment(Date.now()));
                 }
                 res.json(card);
             }).catch(function(thrown) {
@@ -85,7 +85,7 @@ router.post("/", function(req, res, next) {
         next(createError(HTTPStatus.BAD_REQUEST, "Invalid name or list ID"));
     }
     else {
-        let query = `INSERT INTO "cards" VALUES (DEFAULT, :id, :listid, NULL, :date, :name, '') RETURNING "id", "name";`;
+        let query = `INSERT INTO "cards" VALUES (DEFAULT, :id, :listid, NULL, :date, :name, '', to_tsvector('english', :name)) RETURNING "id", "name";`;
         sequelize.query(query, {replacements: {id: user_id, listid: listId, date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), name: name.trim()}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
             res.status(HTTPStatus.CREATED).json(response[0][0]);
         }).catch(function(thrown) {

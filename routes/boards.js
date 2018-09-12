@@ -118,10 +118,10 @@ router.post("/", function(req, res, next) {
                 if(response.length > 0 && response.find(function(obj) {
                     return obj.userId === ownerId;
                 }) != undefined) {
-                    const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :date, :date) RETURNING *`;
+                    const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, :teamid, :title, :date, :date, to_tsvector('english', :title)) RETURNING *`;
                     sequelize.query(query, {replacements: {ownerid: ownerId, teamid: teamId, title: name.trim(), date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z'), date2: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')},
                      type: sequelize.QueryTypes.INSERT}).then(function(response) {
-                        notifyBoardCreation(req.session.id, req.session.name, response[0][0]);
+                         notifyBoardCreation(req.session.id, req.session.name, response[0][0]);
                         res.status(HTTPStatus.CREATED).json(response[0][0]);
                     }).catch(function(thrown) {
                         next(createError(HTTPStatus.INTERNAL_SERVER_ERROR, "Problem inserting board"));
@@ -135,7 +135,7 @@ router.post("/", function(req, res, next) {
             });
         }
         else {
-            const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, NULL, :title, :date, :date) RETURNING *`;
+            const query = `INSERT INTO "boards" VALUES (DEFAULT, :ownerid, NULL, :title, :date, :date, to_tsvector('english', :title)) RETURNING *`;
             sequelize.query(query, {replacements: {ownerid: ownerId, title: name.trim(), date: moment.utc(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS Z')}, type: sequelize.QueryTypes.INSERT}).then(function(response) {
                 res.status(HTTPStatus.CREATED).json(response[0][0]);
             }).catch(function(thrown) {

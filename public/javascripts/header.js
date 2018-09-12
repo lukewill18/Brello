@@ -155,13 +155,13 @@ $(function() {
 
 
     function displayBoardMatches(boards) {
-        if(boards === null) {
+        if(boards.length === 0) {
             boardMatches.addClass("hidden");
         }
         else {
             let temp = ``;
             for(let i = 0; i < boards.length; ++i) {
-                temp += `<div class="match board-match" data-id=${boards[i].id}>${boards[i].title}</div>`;
+                temp += `<div class="match board-match" data-id=${boards[i].match.id}>${boards[i].match.title}</div>`;
             }
             boardMatches.append(temp);
             boardMatches.removeClass("hidden");
@@ -169,14 +169,14 @@ $(function() {
     }
 
     function displayCardMatches(cards) {
-        if(cards === null) {
+        if(cards.length === 0) {
             cardMatches.addClass("hidden");
         }
         else {
             let temp = ``;
             for(let i = 0; i < cards.length; ++i) {
-                temp += `<div class="match card-match" data-id=${cards[i].id} data-board-id=${cards[i].boardId}>${cards[i].name} 
-                <span class="card-match-context"> from <span class="card-match-context-board-title">${cards[i].boardTitle}</span></span></div>`;
+                temp += `<div class="match card-match" data-id=${cards[i].match.id} data-board-id=${cards[i].match.boardId}>${cards[i].match.name} 
+                <span class="card-match-context"> from <span class="card-match-context-board-title">${cards[i].match.boardTitle}</span></span></div>`;
             }
             cardMatches.append(temp);
             cardMatches.removeClass("hidden");
@@ -188,8 +188,8 @@ $(function() {
         if(query.trim() === "")
             matchArea.addClass("hidden");
         else {
-            search(query).then(function(results) {
-                if(results.boards === null && results.cards === null)
+            search(query).then(function(results) {                
+                if(results.boards.length === 0 && results.cards.length === 0)
                     matchArea.addClass("hidden");
                 else {
                     matchArea.find(".match").remove();

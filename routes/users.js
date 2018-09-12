@@ -47,7 +47,7 @@ router.post("/login/", function(req, res, next) {
     sequelize.query(`SELECT "id", "password", concat("firstName", ' ', "lastName") "name" FROM "users" WHERE "email" = :email`, 
     {replacements: {email: email.trim()}, type: sequelize.QueryTypes.SELECT}).then(function(response) {
       if(response.length === 0) {
-        next(createError(HTTPStatus.BAD_REQUEST, "No account found with given email"));
+        next(createError(HTTPStatus.BAD_REQUEST, "No account found with specified email"));
       }
       else {
         bcrypt.compare(password, response[0].password, function(err, crypt_res) {

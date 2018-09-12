@@ -164,6 +164,10 @@ body, textarea {
     word-wrap: break-word;
 }
 
+#board-popup .fas {
+    color: #8c8c8c;
+}
+
 #board-popup h4:nth-child(1) {
     margin-top: 0;
 }
@@ -876,6 +880,7 @@ body, textarea {
 
 .remove-label {
     color: white!important;
+    text-shadow: 1px 0 0 #000, 0 -1px 0 #000, 0 1px 0 #000, -1px 0 0 #000;
 }
 
 .user-icon {
@@ -890,6 +895,7 @@ body, textarea {
     font-size: 14px;
     font-weight: bold;
     padding-top: 6px;
+    user-select: none;
 }
 
 .modal-user-icon {

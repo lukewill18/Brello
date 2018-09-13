@@ -1,8 +1,6 @@
 var express = require('express');
 var HTTPStatus = require("http-status");
 var createError = require("http-errors");
-var axios = require("axios");
-
 var db = require("../models/index.js");
 var Sequelize = db.Sequelize;
 var sequelize = db.sequelize;

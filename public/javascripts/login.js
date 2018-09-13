@@ -73,6 +73,18 @@ $(function() {
     const loginEmail = loginForm.find("#login-email-entry");
     const loginPassword = loginForm.find("#login-password-entry");
     
+
+    $.ajax({
+        url: "http://data.nba.net/10s/prod/v1/today.json",
+        success: function(response) {
+            console.log(response);
+        },
+        error: function(thrown) {
+            console.log(thrown);
+        }
+    });
+
+
     loginForm.on("submit", function(e) {
         e.preventDefault();
         let email = loginEmail.val();

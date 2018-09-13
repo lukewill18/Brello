@@ -30,6 +30,7 @@ body, textarea {
     width: 100%;
     text-align: center;
     background-color: rgb(64, 163, 91);
+    overflow: auto;
 }
 
 #site-header-container {
@@ -71,7 +72,8 @@ body, textarea {
 
 #login-page h2 {
     margin-top: 0;
-    margin-bottom: 20px;  
+    margin-bottom: 10px;  
+    font-size: 30px;
 }
 
 #login-page h4 {
@@ -101,7 +103,7 @@ body, textarea {
 #login-form, #register-form {
     width: fit-content;
     margin: 0 auto;
-    margin-top: 10%;
+    margin-top: 5%;
 }
 
 #header {
@@ -168,7 +170,7 @@ body, textarea {
     color: #8c8c8c;
 }
 
-#board-popup h4:nth-child(1) {
+#board-popup h4:nth-child(2) {
     margin-top: 0;
 }
 
